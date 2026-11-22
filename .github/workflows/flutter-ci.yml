@@ -56,17 +56,34 @@ jobs:
           # gradle-wrapper.jar and the launcher icons are binary files
           # that cannot travel the text-only snapshot push, so they are
           # absent from this repo. Regenerate them here, only when
-          # missing — real files in the repo always win.
+          # missing \u2014 real files in the repo always win. Uses only
+          # python3 / curl / unzip, which every ubuntu runner has.
+          python3 - <<'PYEOF'
+          import struct, zlib, os
+          def png(size, rgb=(27, 58, 47)):
+              row = bytes(rgb) * size
+              raw = b''.join(b'\x00' + row for _ in range(size))
+              def chunk(tag, data):
+                  return (struct.pack('>I', len(data)) + tag + data +
+                          struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff))
+              ihdr = struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0)
+              return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) +
+                      chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b''))
+          for name, size in [('mdpi', 48), ('hdpi', 72), ('xhdpi', 96),
+                             ('xxhdpi', 144), ('xxxhdpi', 192)]:
+              path = f'android/app/src/main/res/mipmap-{name}/ic_launcher.png'
+              if not os.path.exists(path):
+                  open(path, 'wb').write(png(size))
+                  print('generated', path)
+          PYEOF
           if [ ! -f android/gradle/wrapper/gradle-wrapper.jar ]; then
+            if ! command -v gradle >/dev/null 2>&1; then
+              curl -fsSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-9.5.0-bin.zip
+              unzip -q /tmp/gradle.zip -d /tmp
+              export PATH="/tmp/gradle-9.5.0/bin:$PATH"
+            fi
             (cd android && gradle wrapper --gradle-version 9.5.0)
           fi
-          for spec in "mdpi 48" "hdpi 72" "xhdpi 96" "xxhdpi 144" "xxxhdpi 192"; do
-            set -- $spec
-            f="android/app/src/main/res/mipmap-$1/ic_launcher.png"
-            if [ ! -f "$f" ]; then
-              convert -size ${2}x${2} xc:"#1B3A2F" "$f"
-            fi
-          done
 
       - name: Build debug APK
         run: flutter build apk --debug
