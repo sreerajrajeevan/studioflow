@@ -31,7 +31,8 @@ class BillPanel extends ConsumerWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text('Current bill', style: theme.textTheme.titleLarge),
+                  child:
+                      Text('Current bill', style: theme.textTheme.titleLarge),
                 ),
                 if (!cart.isEmpty)
                   TextButton.icon(
@@ -52,14 +53,27 @@ class BillPanel extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final line = cart.lines[index];
                     return _BillLineRow(
-                      key: ValueKey('line_${line.serviceId}_${line.pricePaise}'),
+                      key:
+                          ValueKey('line_${line.serviceId}_${line.pricePaise}'),
                       line: line,
-                      onIncrement: () => ref
-                          .read(cartProvider.notifier)
-                          .incrementLine(line.serviceId, line.pricePaise),
-                      onDecrement: () => ref
-                          .read(cartProvider.notifier)
-                          .decrementLine(line.serviceId, line.pricePaise),
+                      onIncrement: () {
+                        Motion.selectionHaptic();
+                        ref
+                            .read(cartProvider.notifier)
+                            .incrementLine(line.serviceId, line.pricePaise);
+                      },
+                      onDecrement: () {
+                        Motion.selectionHaptic();
+                        ref
+                            .read(cartProvider.notifier)
+                            .decrementLine(line.serviceId, line.pricePaise);
+                      },
+                      onRemove: () {
+                        Motion.selectionHaptic();
+                        ref
+                            .read(cartProvider.notifier)
+                            .removeLineAt(line.serviceId, line.pricePaise);
+                      },
                     );
                   },
                 ),
@@ -130,9 +144,8 @@ class BillPanel extends ConsumerWidget {
               const SizedBox(height: 12),
               FilledButton(
                 key: const ValueKey('checkout_button'),
-                onPressed: cart.isEmpty
-                    ? null
-                    : () => context.push('/checkout'),
+                onPressed:
+                    cart.isEmpty ? null : () => context.push('/checkout'),
                 child: const Text('Checkout'),
               ),
               const SizedBox(height: 6),
@@ -216,11 +229,13 @@ class _BillLineRow extends ConsumerWidget {
     required this.line,
     required this.onIncrement,
     required this.onDecrement,
+    required this.onRemove,
   });
 
   final CartLine line;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -306,30 +321,48 @@ class _BillLineRow extends ConsumerWidget {
             ),
           ),
           _StepperButton(
+            buttonKey: ValueKey('dec_${line.serviceId}_${line.pricePaise}'),
             icon: Icons.remove,
-            tooltip: 'One less',
+            tooltip: 'Decrease quantity of ${line.serviceName}',
             onPressed: onDecrement,
           ),
           SizedBox(
             width: 34,
             child: Text(
               '${line.quantity}',
+              semanticsLabel: 'Quantity ${line.quantity}',
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium,
             ),
           ),
           _StepperButton(
+            buttonKey: ValueKey('inc_${line.serviceId}_${line.pricePaise}'),
             icon: Icons.add,
-            tooltip: 'One more',
+            tooltip: 'Increase quantity of ${line.serviceName}',
             onPressed: onIncrement,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           SizedBox(
             width: 76,
             child: Text(
               inr(line.totalPaise),
               textAlign: TextAlign.right,
               style: theme.textTheme.titleMedium,
+            ),
+          ),
+          Semantics(
+            button: true,
+            label: 'Remove ${line.serviceName} from bill',
+            child: IconButton(
+              key: ValueKey('remove_${line.serviceId}_${line.pricePaise}'),
+              tooltip: 'Remove ${line.serviceName} from bill',
+              onPressed: onRemove,
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: Icon(
+                Icons.delete_outline,
+                size: 21,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -340,11 +373,13 @@ class _BillLineRow extends ConsumerWidget {
 
 class _StepperButton extends StatelessWidget {
   const _StepperButton({
+    required this.buttonKey,
     required this.icon,
     required this.tooltip,
     required this.onPressed,
   });
 
+  final ValueKey<String> buttonKey;
   final IconData icon;
   final String tooltip;
   final VoidCallback onPressed;
@@ -352,17 +387,23 @@ class _StepperButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      iconSize: 20,
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-      style: IconButton.styleFrom(
-        backgroundColor: scheme.surfaceContainerLow,
-        side: BorderSide(color: scheme.outline),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: IconButton(
+        key: buttonKey,
+        tooltip: tooltip,
+        onPressed: onPressed,
+        iconSize: 20,
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        style: IconButton.styleFrom(
+          backgroundColor: scheme.surfaceContainerLow,
+          side: BorderSide(color: scheme.outline),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        icon: Icon(icon),
       ),
-      icon: Icon(icon),
     );
   }
 }
@@ -390,34 +431,63 @@ class BillSummaryBar extends ConsumerWidget {
           child: Row(
             children: [
               Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: cart.isEmpty ? null : () => _showPanel(context),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          cart.isEmpty
-                              ? 'No items yet'
-                              : '${cart.itemCount} item${cart.itemCount == 1 ? '' : 's'} — view bill',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                        AnimatedSwitcher(
-                          duration:
-                              Motion.durationOf(context, Motion.fast),
-                          child: Text(
-                            inr(cart.totalPaise),
-                            key: ValueKey(cart.totalPaise),
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: scheme.primary,
-                              fontWeight: FontWeight.w700,
+                child: Semantics(
+                  button: true,
+                  label: cart.isEmpty
+                      ? 'Bill is empty'
+                      : 'View bill, ${cart.itemCount} items, total ${inr(cart.totalPaise)}',
+                  child: InkWell(
+                    key: const ValueKey('view_bill_button'),
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: cart.isEmpty ? null : () => _showPanel(context),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  cart.isEmpty
+                                      ? 'No items yet'
+                                      : '${cart.itemCount} item${cart.itemCount == 1 ? '' : 's'}',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                                if (!cart.isEmpty) ...[
+                                  Text(
+                                    '  ·  View Bill',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: scheme.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.keyboard_arrow_up,
+                                    size: 16,
+                                    color: scheme.primary,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                          AnimatedSwitcher(
+                            duration: Motion.durationOf(context, Motion.fast),
+                            child: Text(
+                              inr(cart.totalPaise),
+                              key: ValueKey(cart.totalPaise),
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: scheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -443,7 +513,10 @@ class BillSummaryBar extends ConsumerWidget {
       showDragHandle: true,
       builder: (_) => const FractionallySizedBox(
         heightFactor: 0.72,
-        child: BillPanel(showHeader: true),
+        child: SafeArea(
+          top: false,
+          child: BillPanel(showHeader: true),
+        ),
       ),
     );
   }
@@ -543,9 +616,7 @@ Future<void> _openDiscountTax(
                   ),
                   onSubmitted: (value) {
                     final paise = parseInrToPaise(value) ?? 0;
-                    ref
-                        .read(cartProvider.notifier)
-                        .setFlatDiscountPaise(paise);
+                    ref.read(cartProvider.notifier).setFlatDiscountPaise(paise);
                     setSheetState(() {});
                   },
                 ),
@@ -574,8 +645,7 @@ Future<void> _openDiscountTax(
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () {
-                    final paise =
-                        parseInrToPaise(flatController.text) ?? 0;
+                    final paise = parseInrToPaise(flatController.text) ?? 0;
                     if (isOwner) {
                       ref
                           .read(cartProvider.notifier)

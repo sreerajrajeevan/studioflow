@@ -138,7 +138,8 @@ void main() {
     tester.view.physicalSize = const Size(800, 1280);
     await tester.pumpAndSettle();
     expect(find.text('₹300'), findsWidgets);
-    expect(find.text('1 item — view bill'), findsOneWidget);
+    expect(find.text('1 item'), findsOneWidget);
+    expect(find.byKey(const ValueKey('view_bill_button')), findsOneWidget);
     // And back to landscape.
     tester.view.physicalSize = const Size(1280, 800);
     await tester.pumpAndSettle();

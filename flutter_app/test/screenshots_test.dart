@@ -141,7 +141,7 @@ void main() {
     await driveToServices(tester);
     await tester.tap(find.byKey(const ValueKey('service_tile_svc_haircut')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('service_tile_svc_gold_facial')));
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_beard_trim')));
     await tester.pumpAndSettle();
     await expectGoldenFile(tester, '../screenshots/05_tablet_billing.png');
   });
@@ -177,6 +177,20 @@ void main() {
     await tester.tap(find.text('Salary'));
     await tester.pumpAndSettle();
     await expectGoldenFile(tester, '../screenshots/09_salary.png');
+  });
+
+  testWidgets('shot: mobile bill expanded', (tester) async {
+    await pumpAt(tester, const Size(390, 844));
+    await driveToServices(tester);
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_haircut')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_haircut')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_beard_trim')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('view_bill_button')));
+    await tester.pumpAndSettle();
+    await expectGoldenFile(tester, '../screenshots/11_mobile_bill_expanded.png');
   });
 
   testWidgets('shot: settings', (tester) async {
