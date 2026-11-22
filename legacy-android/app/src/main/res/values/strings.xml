@@ -1,0 +1,7 @@
+<resources>
+    <!-- Generic product identity. The customer's studio name comes from
+         StudioProfile at runtime and is never a string resource. -->
+    <string name="app_name">StudioFlow</string>
+    <string name="product_name">StudioFlow</string>
+    <string name="product_tagline">Salon &amp; Studio Management</string>
+</resources>
