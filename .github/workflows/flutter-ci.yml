@@ -92,6 +92,9 @@ jobs:
             # before the Flutter tool has generated local.properties.
             echo "generating gradle-wrapper.jar in a clean directory"
             mkdir -p /tmp/wrapgen
+            # Gradle 9 refuses to run any task, wrapper included, in a
+            # directory with no settings file \u2014 give it a minimal one.
+            printf "rootProject.name = 'wrapgen'\n" > /tmp/wrapgen/settings.gradle
             (cd /tmp/wrapgen && gradle wrapper --gradle-version 9.5.0)
             cp /tmp/wrapgen/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.jar
           fi
