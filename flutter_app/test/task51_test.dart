@@ -162,9 +162,10 @@ void main() {
       expect(theme.scaffoldBackgroundColor, const Color(0xFF050505));
       expect(theme.colorScheme.primary, const Color(0xFFF5D442));
       expect(theme.colorScheme.surface, const Color(0xFF171717));
-      expect(theme.cardTheme.color, const Color(0xFF202020));
-      expect(theme.colorScheme.outline, const Color(0xFF383838));
+      expect(theme.cardTheme.color, const Color(0xFF222222));
+      expect(theme.colorScheme.outline, const Color(0xFF363636));
       expect(theme.colorScheme.onSurface, const Color(0xFFFFFFFF));
+      expect(theme.colorScheme.onSurfaceVariant, const Color(0xFFA9A9A9));
       // The old green must not appear anywhere in the D POISE scheme.
       expect(theme.colorScheme.primary, isNot(const Color(0xFF1B3A2F)));
       expect(theme.scaffoldBackgroundColor, isNot(const Color(0xFF1B3A2F)));

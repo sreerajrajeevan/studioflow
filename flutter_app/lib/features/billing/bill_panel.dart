@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/state.dart';
 import '../../core/format.dart';
+import '../../core/motion.dart';
 import '../../core/price_parse.dart';
 import 'cart.dart';
 import '../../data/providers.dart';
@@ -404,11 +405,16 @@ class BillSummaryBar extends ConsumerWidget {
                               : '${cart.itemCount} item${cart.itemCount == 1 ? '' : 's'} — view bill',
                           style: theme.textTheme.bodySmall,
                         ),
-                        Text(
-                          inr(cart.totalPaise),
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: scheme.primary,
-                            fontWeight: FontWeight.w700,
+                        AnimatedSwitcher(
+                          duration:
+                              Motion.durationOf(context, Motion.fast),
+                          child: Text(
+                            inr(cart.totalPaise),
+                            key: ValueKey(cart.totalPaise),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: scheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],

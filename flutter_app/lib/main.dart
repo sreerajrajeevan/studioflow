@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/router.dart';
 import 'app/state.dart';
@@ -17,6 +18,12 @@ import 'features/billing/cart.dart';
 /// a POS that won't open is worse than one that can't persist.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Edge-to-edge on every Android version (Task 5.2): target SDK 36
+  // forces it on Android 15+ anyway; opting in explicitly keeps older
+  // versions identical. The bars are transparent (see
+  // ThemeConfig.overlayStyle); content insets are owned by
+  // ShellInsets and the bottom bars, never by the window.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   final container = ProviderContainer();
   try {
     final db = container.read(appDatabaseProvider);
@@ -53,11 +60,18 @@ class StudioFlowApp extends ConsumerWidget {
     ref.watch(persistenceBootstrapProvider);
     final branding = ref.watch(brandingProvider);
     final router = ref.watch(routerProvider);
-    return MaterialApp.router(
-      title: 'StudioFlow',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeConfig.buildTheme(branding),
-      routerConfig: router,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // App-wide status/navigation bar contrast — shell screens have
+      // no AppBar to carry the style, so it is applied here, once.
+      value: ThemeConfig.overlayStyle(
+        branding.dark ? Brightness.dark : Brightness.light,
+      ),
+      child: MaterialApp.router(
+        title: 'StudioFlow',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeConfig.buildTheme(branding),
+        routerConfig: router,
+      ),
     );
   }
 }

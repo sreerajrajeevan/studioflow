@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../branding/brand_logo.dart';
 import '../branding/studio_branding.dart';
 import '../core/breakpoints.dart';
+import '../core/motion.dart';
+import 'app_scaffold.dart';
 import 'state.dart';
 
 class NavDestinationDef {
@@ -128,7 +130,7 @@ class AppShell extends ConsumerWidget {
 
     if (layout == LayoutClass.compact) {
       return Scaffold(
-        body: child,
+        body: ShellInsets(child: child),
         bottomNavigationBar: _BottomBar(
           visible: visible,
           location: location,
@@ -148,7 +150,8 @@ class AppShell extends ConsumerWidget {
     final moreSelected = moreDests.any(matches);
 
     return Scaffold(
-      body: Row(
+      body: ShellInsets(
+        child: Row(
         children: [
           Container(
             color: Theme.of(context).colorScheme.tertiaryContainer,
@@ -160,7 +163,7 @@ class AppShell extends ConsumerWidget {
               onDestinationSelected: (i) => context.go(railDests[i].location),
               labelType: NavigationRailLabelType.all,
               leading: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 18, 0, 10),
+                padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -227,6 +230,7 @@ class AppShell extends ConsumerWidget {
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(child: child),
         ],
+        ),
       ),
     );
   }
@@ -310,29 +314,108 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final dark = theme.brightness == Brightness.dark;
     final primary = visible.where((d) => !d.inMoreMenu).toList();
-    final index = primary.indexWhere(
+    final selected = primary.indexWhere(
       (d) =>
           d.location == location ||
           (d.location == '/billing' && location.startsWith('/billing/')),
     );
-    return NavigationBar(
-      selectedIndex: index < 0 ? 0 : index,
-      onDestinationSelected: (i) {
-        if (i < primary.length) {
-          context.go(primary[i].location);
-        } else {
-          onMore();
-        }
-      },
-      destinations: [
-        for (final d in primary)
-          NavigationDestination(icon: Icon(d.icon), label: d.label),
-        const NavigationDestination(
-          icon: Icon(Icons.more_horiz),
-          label: 'More',
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    // Refined bar (Task 5.2): compact 58dp content row, a slim gold
+    // indicator that glides to the active destination, consistent 23dp
+    // icons and 11px labels. The bar's background paints through the
+    // gesture area; its CONTENT pads by the real bottom inset.
+    return Container(
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF0B0B0B) : const Color(0xFF232323),
+        border: Border(top: BorderSide(color: scheme.outline)),
+      ),
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SizedBox(
+        height: 58,
+        child: Row(
+          children: [
+            for (var i = 0; i < primary.length; i++)
+              _BarItem(
+                icon: primary[i].icon,
+                label: primary[i].label,
+                selected: i == selected,
+                onTap: () => context.go(primary[i].location),
+              ),
+            _BarItem(
+              icon: Icons.more_horiz,
+              label: 'More',
+              selected: false,
+              onTap: onMore,
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _BarItem extends StatelessWidget {
+  const _BarItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final accent = scheme.primary;
+    final idle = scheme.onSurfaceVariant;
+    final duration = Motion.durationOf(context, Motion.standard);
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: duration,
+                curve: Motion.curve,
+                width: selected ? 20 : 0,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Icon(icon, size: 23, color: selected ? accent : idle),
+              const SizedBox(height: 2),
+              AnimatedDefaultTextStyle(
+                duration: duration,
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? accent : idle,
+                ),
+                child: Text(label, maxLines: 1),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

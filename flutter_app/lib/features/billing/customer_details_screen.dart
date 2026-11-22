@@ -81,7 +81,8 @@ class _CustomerDetailsScreenState
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           children: [
             Row(
               children: [

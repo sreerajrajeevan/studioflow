@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/state.dart';
 import '../../branding/brand_logo.dart';
 import '../../core/breakpoints.dart';
+import '../../core/motion.dart';
 import '../../domain/models.dart';
 import '../../data/providers.dart';
 import 'bill_panel.dart';
@@ -218,13 +219,26 @@ class _CatalogColumn extends ConsumerWidget {
         Expanded(
           child: services.isEmpty
               ? Center(
-                  child: Text(
-                    'No services match your search.',
-                    style: theme.textTheme.bodyMedium,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search_off_outlined,
+                        size: 40,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No services match your search.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
                 )
               : GridView.builder(
                   key: const ValueKey('service_grid'),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: gridColumns,
@@ -286,14 +300,17 @@ class ServiceTile extends ConsumerWidget {
 
     return Material(
       color: inCart ? scheme.primaryContainer : scheme.surface,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         key: ValueKey('service_tile_${service.id}'),
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => ref.read(cartProvider.notifier).addService(service),
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          Motion.selectionHaptic();
+          ref.read(cartProvider.notifier).addService(service);
+        },
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: inCart ? scheme.primary : scheme.outline,
               width: inCart ? 1.6 : 1,
@@ -358,7 +375,12 @@ class ServiceTile extends ConsumerWidget {
                 Positioned(
                   top: 0,
                   right: 0,
-                  child: Container(
+                  child: AnimatedScale(
+                    key: ValueKey('qty_badge_anim_${service.id}'),
+                    scale: 1,
+                    duration: Motion.durationOf(context, Motion.fast),
+                    curve: Motion.curve,
+                    child: Container(
                     key: ValueKey('qty_badge_${service.id}'),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -373,6 +395,7 @@ class ServiceTile extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
+                    ),
                     ),
                   ),
                 ),

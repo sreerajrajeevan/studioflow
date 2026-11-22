@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../branding/studio_branding.dart';
+import 'motion.dart';
 
 /// Centralised theme construction from a [StudioBranding].
 ///
@@ -17,6 +18,26 @@ class ThemeConfig {
   static const charcoalText = Color(0xFF1C1C1C);
   static const mutedText = Color(0xFF4A4A4A);
   static const outline = Color(0xFFDDD6C6);
+
+
+  /// The system-bar treatment for a brightness (Task 5.2): transparent
+  /// bars over the app's own background (edge-to-edge), icon contrast
+  /// matched to the theme. Applied app-wide via AnnotatedRegion in the
+  /// app root AND on AppBars, so shell screens without an AppBar get
+  /// the same correct contrast.
+  static SystemUiOverlayStyle overlayStyle(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    return SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness:
+          dark ? Brightness.light : Brightness.dark,
+      systemNavigationBarContrastEnforced: false,
+      systemStatusBarContrastEnforced: false,
+    );
+  }
 
   static ThemeData buildTheme(StudioBranding branding) {
     if (branding.dark) return buildDarkTheme(branding);
@@ -54,6 +75,7 @@ class ThemeConfig {
     );
 
     return base.copyWith(
+      pageTransitionsTheme: appPageTransitionsTheme,
       textTheme: _textTheme(base.textTheme),
       appBarTheme: const AppBarTheme(
         backgroundColor: ivory,
@@ -152,10 +174,10 @@ class ThemeConfig {
   // prices and primary actions — never as a wash over everything.
   static const darkBackground = Color(0xFF050505);
   static const darkSurface = Color(0xFF171717);
-  static const darkCard = Color(0xFF202020);
+  static const darkCard = Color(0xFF222222);
   static const darkText = Color(0xFFFFFFFF);
-  static const darkMutedText = Color(0xFFA8A8A8);
-  static const darkBorder = Color(0xFF383838);
+  static const darkMutedText = Color(0xFFA9A9A9);
+  static const darkBorder = Color(0xFF363636);
 
   static ThemeData buildDarkTheme(StudioBranding branding) {
     final accent = branding.primaryColor;
@@ -201,6 +223,7 @@ class ThemeConfig {
     );
 
     return base.copyWith(
+      pageTransitionsTheme: appPageTransitionsTheme,
       textTheme: _darkTextTheme(base.textTheme),
       appBarTheme: const AppBarTheme(
         backgroundColor: darkBackground,
@@ -211,15 +234,17 @@ class ThemeConfig {
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
-          systemNavigationBarColor: darkBackground,
+          systemNavigationBarColor: Colors.transparent,
           systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarContrastEnforced: false,
+          systemStatusBarContrastEnforced: false,
         ),
       ),
       cardTheme: CardThemeData(
         color: darkCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           side: const BorderSide(color: darkBorder),
         ),
         margin: EdgeInsets.zero,
@@ -249,6 +274,7 @@ class ThemeConfig {
         ),
       ),
       chipTheme: base.chipTheme.copyWith(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         backgroundColor: darkSurface,
         selectedColor: accent,
         checkmarkColor: const Color(0xFF050505),
