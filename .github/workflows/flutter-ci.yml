@@ -73,6 +73,9 @@ jobs:
                              ('xxhdpi', 144), ('xxxhdpi', 192)]:
               path = f'android/app/src/main/res/mipmap-{name}/ic_launcher.png'
               if not os.path.exists(path):
+                  # The mipmap-* folders held ONLY these PNGs, so they
+                  # do not exist in a git checkout \u2014 create them.
+                  os.makedirs(os.path.dirname(path), exist_ok=True)
                   open(path, 'wb').write(png(size))
                   print('generated', path)
           PYEOF
