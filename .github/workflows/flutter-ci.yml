@@ -1,0 +1,56 @@
+name: Flutter CI
+
+# Builds and tests the StudioFlow Flutter app on a supported runner —
+# this is where the Android APK build is verified (the dev sandbox cannot
+# run Gradle; see docs/TASK1_7_NOTES.md).
+on:
+  push:
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-ci.yml'
+  pull_request:
+    paths:
+      - 'flutter_app/**'
+
+jobs:
+  analyze-test-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.0'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify code generation is current
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          git diff --exit-code lib/data/database.g.dart
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Test (unit, widget, persistence, goldens)
+        run: flutter test
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: studioflow-debug-apk
+          path: flutter_app/build/app/outputs/flutter-apk/app-debug.apk
