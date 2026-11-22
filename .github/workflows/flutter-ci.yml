@@ -78,11 +78,19 @@ jobs:
           PYEOF
           if [ ! -f android/gradle/wrapper/gradle-wrapper.jar ]; then
             if ! command -v gradle >/dev/null 2>&1; then
+              echo "gradle not on PATH; downloading Gradle 9.5.0"
               curl -fsSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-9.5.0-bin.zip
               unzip -q /tmp/gradle.zip -d /tmp
               export PATH="/tmp/gradle-9.5.0/bin:$PATH"
             fi
-            (cd android && gradle wrapper --gradle-version 9.5.0)
+            # Generate the wrapper in an EMPTY directory and copy only
+            # the jar in. Running `gradle wrapper` inside android/
+            # evaluates the Flutter project's build scripts, which fail
+            # before the Flutter tool has generated local.properties.
+            echo "generating gradle-wrapper.jar in a clean directory"
+            mkdir -p /tmp/wrapgen
+            (cd /tmp/wrapgen && gradle wrapper --gradle-version 9.5.0)
+            cp /tmp/wrapgen/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.jar
           fi
 
       - name: Build debug APK
