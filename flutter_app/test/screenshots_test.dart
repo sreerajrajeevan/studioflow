@@ -5,15 +5,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'test_database.dart';
-import 'package:studioflow/features/billing/cart.dart';
-import 'package:studioflow/features/services/sample_catalog.dart';
+import 'package:studioflow/app/splash_screen.dart';
+import 'package:studioflow/branding/studio_branding.dart';
+import 'package:studioflow/core/theme.dart';
 import 'package:studioflow/main.dart';
 
-/// Screenshot deliverables for Task 1.6, rendered by the Flutter test
-/// engine from the REAL app widgets (not mockups). Output lands in
-/// screenshots/ via `flutter test --update-goldens test/screenshots_test.dart`
-/// with the files renamed by the task script. Golden comparisons are not
-/// asserted here — these tests exist to render the surfaces.
+/// Screenshot deliverables, rendered by the Flutter test engine from
+/// the REAL app widgets (not mockups). Output lands in screenshots/
+/// via `flutter test --update-goldens test/screenshots_test.dart`.
+/// Task 5.1 set: splash, employee selection, customer details, mobile
+/// billing, tablet billing, plus the restyled section screens.
 void main() {
   late Override dbOverride;
 
@@ -53,6 +54,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Drives the Task 5.1 flow to the services screen.
+  Future<void> driveToServices(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('employee_card_emp_1')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('customer_name_field')),
+      'Ajay Kumar',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('customer_phone_field')),
+      '98765 43210',
+    );
+    await tester.tap(find.byKey(const ValueKey('continue_to_billing')));
+    await tester.pumpAndSettle();
+  }
+
   /// Visual-regression comparison against the reference PNGs in
   /// screenshots/. Those PNGs are binary and are NOT in the GitHub
   /// repo (the snapshot push route is text-only), so in CI — or any
@@ -76,56 +93,81 @@ void main() {
     }
   }
 
-  testWidgets('shot: tablet landscape billing', (tester) async {
-    await pumpAt(tester, const Size(1280, 800));
-    await expectGoldenFile(tester, '../screenshots/01_tablet_landscape_billing.png');
+  testWidgets('shot: splash', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeConfig.buildTheme(dpoiseDemoBranding),
+        home: const SplashView(branding: dpoiseDemoBranding),
+      ),
+    );
+    // The embedded logo is a large PNG; give the codec real async time
+    // to decode it before the golden is captured.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+    await expectGoldenFile(tester, '../screenshots/01_splash.png');
   });
 
-  testWidgets('shot: tablet portrait billing', (tester) async {
-    await pumpAt(tester, const Size(800, 1280));
-    await expectGoldenFile(tester, '../screenshots/02_tablet_portrait_billing.png');
+  testWidgets('shot: employee selection', (tester) async {
+    await pumpAt(tester, const Size(390, 844));
+    await expectGoldenFile(
+        tester, '../screenshots/02_employee_selection.png');
+  });
+
+  testWidgets('shot: customer details', (tester) async {
+    await pumpAt(tester, const Size(390, 844));
+    await tester.tap(find.byKey(const ValueKey('employee_card_emp_1')));
+    await tester.pumpAndSettle();
+    await expectGoldenFile(tester, '../screenshots/03_customer_details.png');
   });
 
   testWidgets('shot: mobile billing', (tester) async {
     await pumpAt(tester, const Size(390, 844));
-    await expectGoldenFile(tester, '../screenshots/03_mobile_billing.png');
+    await driveToServices(tester);
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_haircut')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_beard_trim')));
+    await tester.pumpAndSettle();
+    await expectGoldenFile(tester, '../screenshots/04_mobile_billing.png');
+  });
+
+  testWidgets('shot: tablet landscape billing', (tester) async {
+    await pumpAt(tester, const Size(1280, 800));
+    await driveToServices(tester);
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_haircut')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_gold_facial')));
+    await tester.pumpAndSettle();
+    await expectGoldenFile(tester, '../screenshots/05_tablet_billing.png');
   });
 
   testWidgets('shot: checkout', (tester) async {
-    tester.view.physicalSize = const Size(1280, 800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-    final container = ProviderContainer(overrides: [dbOverride]);
-    addTearDown(container.dispose);
-    final notifier = container.read(cartProvider.notifier);
-    notifier.addService(
-        SampleCatalog.services.firstWhere((s) => s.id == 'svc_haircut'));
-    notifier.addService(
-        SampleCatalog.services.firstWhere((s) => s.id == 'svc_gold_facial'));
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const StudioFlowApp(),
-      ),
-    );
+    await pumpAt(tester, const Size(1280, 800));
+    await driveToServices(tester);
+    await tester.tap(find.byKey(const ValueKey('service_tile_svc_haircut')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('checkout_button')));
     await tester.pumpAndSettle();
-    await expectGoldenFile(tester, '../screenshots/04_checkout_demo_qr.png');
+    await expectGoldenFile(tester, '../screenshots/06_checkout.png');
   });
 
   testWidgets('shot: dashboard', (tester) async {
     await pumpAt(tester, const Size(1280, 800));
     await tester.tap(find.text('Dashboard').first);
     await tester.pumpAndSettle();
-    await expectGoldenFile(tester, '../screenshots/05_dashboard.png');
+    await expectGoldenFile(tester, '../screenshots/07_dashboard.png');
   });
 
   testWidgets('shot: attendance', (tester) async {
     await pumpAt(tester, const Size(1280, 800));
     await tester.tap(find.text('Attendance').first);
     await tester.pumpAndSettle();
-    await expectGoldenFile(tester, '../screenshots/06_attendance.png');
+    await expectGoldenFile(tester, '../screenshots/08_attendance.png');
   });
 
   testWidgets('shot: salary', (tester) async {
@@ -134,7 +176,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Salary'));
     await tester.pumpAndSettle();
-    await expectGoldenFile(tester, '../screenshots/07_salary.png');
+    await expectGoldenFile(tester, '../screenshots/09_salary.png');
   });
 
   testWidgets('shot: settings', (tester) async {
@@ -143,6 +185,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    await expectGoldenFile(tester, '../screenshots/08_settings.png');
+    await expectGoldenFile(tester, '../screenshots/10_settings.png');
   });
 }

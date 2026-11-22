@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../app/state.dart';
+import '../../branding/brand_logo.dart';
 import '../../core/breakpoints.dart';
 import '../../domain/models.dart';
 import '../../data/providers.dart';
@@ -57,8 +59,11 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
       onQuery: (q) => setState(() => _query = q),
     );
 
+    final Widget body;
     if (layout == LayoutClass.expanded) {
-      return Row(
+      // Tablet landscape POS: multi-column services + a persistent
+      // right-side bill summary (Task 5.1 §7).
+      body = Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(child: catalog),
@@ -74,61 +79,78 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
           ),
         ],
       );
+    } else {
+      // Medium + compact: catalog with a sticky bill summary bar.
+      body = Column(
+        children: [
+          Expanded(child: catalog),
+          const BillSummaryBar(),
+        ],
+      );
     }
 
-    // Medium + compact: catalog with a sticky bill summary.
     return Column(
       children: [
-        if (layout == LayoutClass.compact) const _MobileHeader(),
-        Expanded(child: catalog),
-        const BillSummaryBar(),
+        const _SessionHeader(),
+        Expanded(child: body),
       ],
     );
   }
 }
 
-class _MobileHeader extends ConsumerWidget {
-  const _MobileHeader();
+/// Screen 3 header (Task 5.1): compact original logo, the billing
+/// employee and the customer, with an Edit action back to Customer
+/// Details. Falls back to the studio identity before a session starts.
+class _SessionHeader extends ConsumerWidget {
+  const _SessionHeader();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final branding = ref.watch(brandingProvider);
+    final cart = ref.watch(cartProvider);
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+    final scheme = theme.colorScheme;
+    final hasSession = cart.billingEmployeeName != null;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: scheme.outline)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       child: Row(
         children: [
+          BrandLogo(branding: branding, size: 42),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  branding.businessName,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontFamily: 'serif',
-                    letterSpacing: 0.8,
-                  ),
+                  hasSession ? cart.billingEmployeeName! : branding.businessName,
+                  style: theme.textTheme.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                if (branding.tagline != null)
-                  Text(branding.tagline!, style: theme.textTheme.bodySmall),
+                Text(
+                  hasSession
+                      ? (cart.customerName.isNotEmpty
+                          ? 'Billing · Customer: ${cart.customerName}'
+                          : 'Billing')
+                      : (branding.tagline ?? ''),
+                  style: theme.textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(8),
+          if (hasSession)
+            IconButton(
+              key: const ValueKey('edit_customer_button'),
+              tooltip: 'Edit customer details',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => context.go('/billing/customer'),
             ),
-            child: Text(
-              'SAMPLE DATA',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSecondaryContainer,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ),
+          const _DraftsButton(),
         ],
       ),
     );
@@ -161,35 +183,7 @@ class _CatalogColumn extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text('New bill', style: theme.textTheme.headlineSmall),
-              ),
-              const _DraftsButton(),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'SAMPLE DATA',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSecondaryContainer,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: TextField(
             key: const ValueKey('service_search'),
             onChanged: onQuery,
@@ -342,6 +336,23 @@ class ServiceTile extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.add,
+                    color: scheme.onPrimary,
+                    size: 20,
+                  ),
+                ),
               ),
               if (inCart)
                 Positioned(

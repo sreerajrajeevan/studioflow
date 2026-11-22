@@ -518,7 +518,7 @@ void main() {
       filePayroll = DriftPayrollRepository(fileDb);
       final version =
           await fileDb.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
       final run = await filePayroll.getRun(approved.id);
       expect(run!.status, PayrollRunStatus.partiallyPaid);
       expect(
@@ -551,7 +551,7 @@ void main() {
       final upgraded = AppDatabase.forTesting(NativeDatabase(File(path)));
       final version =
           await upgraded.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
       final repo = DriftPayrollRepository(upgraded);
       final preview = await repo.preview('2026-10');
       expect(preview.single.employee.name, 'Rahul');

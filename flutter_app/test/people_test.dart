@@ -117,7 +117,7 @@ void main() {
       expect(loaded.photoPath, '/photos/meera.jpg');
       final version =
           await database.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
       await database.close();
     });
   });
@@ -385,7 +385,7 @@ void main() {
       addTearDown(db.close);
       final version =
           await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
       final employee = await DriftEmployeeRepository(db).getById('e1');
       expect(employee!.name, 'Rahul');
       expect(employee.joiningDate, isNull,

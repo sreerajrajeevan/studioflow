@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../branding/studio_branding.dart';
 
 /// Centralised theme construction from a [StudioBranding].
@@ -18,6 +19,7 @@ class ThemeConfig {
   static const outline = Color(0xFFDDD6C6);
 
   static ThemeData buildTheme(StudioBranding branding) {
+    if (branding.dark) return buildDarkTheme(branding);
     final rawPrimary = branding.primaryColor;
     final primary = ensureReadablePrimary(rawPrimary);
     final secondary = branding.secondaryColor;
@@ -140,6 +142,227 @@ class ThemeConfig {
         }),
       ),
       dividerTheme: const DividerThemeData(color: outline, thickness: 1),
+    );
+  }
+
+  // --- Dark design system (Task 5.1, D POISE black & gold) ---
+  //
+  // Fixed neutrals from the brief; the studio's primary is the accent
+  // (gold for D POISE) and is used for emphasis, active controls, key
+  // prices and primary actions — never as a wash over everything.
+  static const darkBackground = Color(0xFF050505);
+  static const darkSurface = Color(0xFF171717);
+  static const darkCard = Color(0xFF202020);
+  static const darkText = Color(0xFFFFFFFF);
+  static const darkMutedText = Color(0xFFA8A8A8);
+  static const darkBorder = Color(0xFF383838);
+
+  static ThemeData buildDarkTheme(StudioBranding branding) {
+    final accent = branding.primaryColor;
+    final secondary = branding.secondaryColor;
+
+    final scheme = ColorScheme(
+      brightness: Brightness.dark,
+      primary: accent,
+      onPrimary: const Color(0xFF050505),
+      primaryContainer: const Color(0xFF2E2A12),
+      onPrimaryContainer: accent,
+      secondary: secondary,
+      onSecondary: const Color(0xFF050505),
+      secondaryContainer: const Color(0xFF262626),
+      onSecondaryContainer: const Color(0xFFE8E8E8),
+      tertiary: accent,
+      onTertiary: const Color(0xFF050505),
+      error: const Color(0xFFFFB4AB),
+      onError: const Color(0xFF690005),
+      surface: darkSurface,
+      onSurface: darkText,
+      onSurfaceVariant: darkMutedText,
+      surfaceContainerLowest: darkBackground,
+      surfaceContainerLow: darkSurface,
+      surfaceContainer: const Color(0xFF1C1C1C),
+      surfaceContainerHigh: darkCard,
+      surfaceContainerHighest: const Color(0xFF262626),
+      outline: darkBorder,
+      outlineVariant: const Color(0xFF2A2A2A),
+      inverseSurface: const Color(0xFFF2F2F2),
+      onInverseSurface: const Color(0xFF1C1C1C),
+      inversePrimary: accent,
+      shadow: Colors.black,
+      scrim: Colors.black,
+      surfaceTint: Colors.transparent,
+    );
+
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: darkBackground,
+      visualDensity: VisualDensity.standard,
+    );
+
+    return base.copyWith(
+      textTheme: _darkTextTheme(base.textTheme),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: darkBackground,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: darkText,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+          systemNavigationBarColor: darkBackground,
+          systemNavigationBarIconBrightness: Brightness.light,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: darkCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: darkBorder),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(48, 52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: const TextStyle(
+            fontFamily: 'Roboto',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          foregroundColor: darkText,
+          side: const BorderSide(color: darkBorder),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        backgroundColor: darkSurface,
+        selectedColor: accent,
+        checkmarkColor: const Color(0xFF050505),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        side: const BorderSide(color: darkBorder),
+        labelStyle: const TextStyle(fontFamily: 'Roboto', color: darkText),
+        secondaryLabelStyle: const TextStyle(
+          fontFamily: 'Roboto',
+          color: Color(0xFF050505),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkSurface,
+        hintStyle: const TextStyle(color: darkMutedText),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: darkBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: darkBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: accent, width: 1.6),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFFFB4AB)),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: const Color(0xFF0B0B0B),
+        indicatorColor: accent.withValues(alpha: 0.22),
+        selectedIconTheme: IconThemeData(color: accent, size: 24),
+        unselectedIconTheme: const IconThemeData(
+          color: darkMutedText,
+          size: 24,
+        ),
+        selectedLabelTextStyle: TextStyle(
+          fontFamily: 'Roboto',
+          color: accent,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelTextStyle: const TextStyle(
+          fontFamily: 'Roboto',
+          color: darkMutedText,
+          fontSize: 12,
+        ),
+        minWidth: 76,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF0B0B0B),
+        indicatorColor: accent.withValues(alpha: 0.25),
+        height: 68,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(color: selected ? accent : darkMutedText);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontFamily: 'Roboto',
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? accent : darkMutedText,
+          );
+        }),
+      ),
+      dividerTheme: const DividerThemeData(color: darkBorder, thickness: 1),
+      dialogTheme: const DialogThemeData(backgroundColor: darkSurface),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: darkSurface,
+        modalBackgroundColor: darkSurface,
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: darkCard,
+        contentTextStyle: TextStyle(color: darkText),
+      ),
+      popupMenuTheme: const PopupMenuThemeData(color: darkCard),
+      listTileTheme: const ListTileThemeData(
+        textColor: darkText,
+        iconColor: darkMutedText,
+      ),
+    );
+  }
+
+  static TextTheme _darkTextTheme(TextTheme base) {
+    return base.copyWith(
+      headlineMedium: base.headlineMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: darkText,
+        letterSpacing: -0.2,
+      ),
+      headlineSmall: base.headlineSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: darkText,
+      ),
+      titleLarge: base.titleLarge?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: darkText,
+      ),
+      titleMedium: base.titleMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: darkText,
+      ),
+      bodyMedium: base.bodyMedium?.copyWith(color: darkText),
+      bodySmall: base.bodySmall?.copyWith(color: darkMutedText),
+      labelLarge: base.labelLarge?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/app_shell.dart';
 import '../../app/state.dart';
+import '../../branding/brand_logo.dart';
 import '../../branding/studio_branding.dart';
 
 /// Settings prototype. Branding edits are LIVE (they update
@@ -80,14 +81,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   void _applyPreset(BrandingPreset preset) {
     final current = ref.read(brandingProvider);
-    ref.read(brandingProvider.notifier).state = current.copyWith(
+    var next = current.copyWith(
       primaryColor: preset.primary,
       secondaryColor: preset.secondary,
       // Only the demo preset may set the business name; colour presets
       // never rename a studio (rule carried over from Task 1.5).
       businessName: preset.isDemo ? preset.businessName : null,
       tagline: preset.isDemo ? preset.tagline : null,
+      dark: preset.dark,
+      logoAssetPath: preset.logoAssetPath,
     );
+    // Switching AWAY from the D POISE demo must drop the embedded D
+    // POISE logo — it belongs to that brand only (copyWith cannot null
+    // a field, so rebuild in that one case).
+    if (!preset.isDemo && next.logoAssetPath == poiseLogoAssetKey) {
+      next = StudioBranding(
+        businessName: next.businessName,
+        tagline: next.tagline,
+        primaryColor: next.primaryColor,
+        secondaryColor: next.secondaryColor,
+        address: next.address,
+        phone: next.phone,
+        email: next.email,
+        gstin: next.gstin,
+        upiId: next.upiId,
+        upiPayeeName: next.upiPayeeName,
+        currencyCode: next.currencyCode,
+        invoicePrefix: next.invoicePrefix,
+        invoiceFooter: next.invoiceFooter,
+        dark: next.dark,
+      );
+    }
+    ref.read(brandingProvider.notifier).state = next;
     if (preset.isDemo) {
       _name.text = preset.businessName ?? _name.text;
       _tagline.text = preset.tagline ?? '';
@@ -117,7 +142,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BrandMark(branding: branding, size: 54),
+                  BrandLogo(branding: branding, size: 54),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(

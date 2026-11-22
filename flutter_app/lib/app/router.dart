@@ -4,6 +4,8 @@ import '../features/advances/advances_screen.dart';
 import '../features/attendance/attendance_screen.dart';
 import '../features/billing/billing_screen.dart';
 import '../features/billing/checkout_screen.dart';
+import '../features/billing/customer_details_screen.dart';
+import '../features/billing/employee_select_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/employees/employees_screen.dart';
 import '../features/history/history_screen.dart';
@@ -12,11 +14,12 @@ import '../features/reports/reports_screen.dart';
 import '../features/services/services_screen.dart';
 import '../features/settings/settings_screen.dart';
 import 'app_shell.dart';
+import 'splash_screen.dart';
 import 'state.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/billing',
+    initialLocation: '/splash',
     redirect: (context, state) {
       // Role-preview guard: staff preview cannot open admin destinations.
       // (UI-level only — the backend will enforce real authorization.)
@@ -28,12 +31,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       ShellRoute(
         builder: (context, state, child) =>
             AppShell(location: state.matchedLocation, child: child),
         routes: [
+          // The billing flow (Task 5.1): employee selection is the
+          // section root; customer details and services are its steps.
           GoRoute(
             path: '/billing',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: EmployeeSelectScreen()),
+          ),
+          GoRoute(
+            path: '/billing/customer',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: CustomerDetailsScreen()),
+          ),
+          GoRoute(
+            path: '/billing/services',
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: BillingScreen()),
           ),

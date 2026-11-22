@@ -453,7 +453,7 @@ void main() {
       expect((await repo.auditFor(bill.id)).single.type, 'finalized');
       final version =
           await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
       await db.close();
     });
   });
@@ -561,7 +561,7 @@ void main() {
       addTearDown(db.close);
       final version =
           await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
       final draft = await DriftDraftStore(db).loadDraft('d1');
       expect(draft, isNotNull);
       expect(draft!.totalPaise, 60000);

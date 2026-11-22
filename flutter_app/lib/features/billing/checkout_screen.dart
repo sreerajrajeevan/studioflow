@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../app/app_shell.dart';
 import '../../app/state.dart';
+import '../../branding/brand_logo.dart';
 import '../../core/format.dart';
 import '../../core/money.dart';
 import '../../core/price_parse.dart';
@@ -50,15 +51,8 @@ class _PaymentEntry {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final List<_PaymentEntry> _payments = [];
-  final TextEditingController _customer = TextEditingController();
   bool _initialized = false;
   String? _error;
-
-  @override
-  void dispose() {
-    _customer.dispose();
-    super.dispose();
-  }
 
   String get _actor =>
       ref.read(roleProvider) == AppRole.owner ? 'Owner' : 'Staff';
@@ -101,7 +95,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             children: [
               Row(
                 children: [
-                  BrandMark(branding: branding, size: 52),
+                  BrandLogo(branding: branding, size: 52),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -124,11 +118,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               const SizedBox(height: 18),
               _SummaryCard(cart: cart),
               const SizedBox(height: 14),
-              TextField(
-                controller: _customer,
-                decoration: const InputDecoration(
-                  labelText: 'Customer name (optional)',
-                  prefixIcon: Icon(Icons.person_outline),
+              // Task 5.1: the customer comes from the billing session
+              // (Customer Details screen) — shown here, editable via
+              // Edit, and frozen into the invoice snapshot. No second,
+              // divergent customer field at checkout.
+              Card(
+                key: const ValueKey('checkout_customer_card'),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.person_outline,
+                    color: theme.colorScheme.primary,
+                  ),
+                  title: Text(
+                    cart.customerName.isEmpty
+                        ? 'No customer details'
+                        : cart.customerName,
+                  ),
+                  subtitle: Text(
+                    [
+                      if (cart.customerPhone.isNotEmpty) cart.customerPhone,
+                      if (cart.billingEmployeeName != null)
+                        'Billed by ${cart.billingEmployeeName}',
+                      if (cart.customerNotes.isNotEmpty) cart.customerNotes,
+                    ].join(' · '),
+                  ),
+                  trailing: TextButton(
+                    key: const ValueKey('checkout_edit_customer'),
+                    onPressed: () => context.go('/billing/customer'),
+                    child: const Text('Edit'),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -257,7 +275,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
               ],
               actor: _actor,
-              customerName: _customer.text,
+              customerName: cart.customerName,
             );
       });
     } on ArgumentError catch (e) {

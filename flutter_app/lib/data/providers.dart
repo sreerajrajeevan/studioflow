@@ -107,7 +107,8 @@ final draftSaveStatusProvider =
 
 String _fingerprint(CartState state) =>
     '${state.draftId}|${state.discountPercent}|${state.flatDiscountPaise}|'
-    '${state.taxBasisPoints}|'
+    '${state.taxBasisPoints}|${state.billingEmployeeId ?? ''}|'
+    '${state.customerName}|${state.customerPhone}|${state.customerNotes}|'
     '${state.lines.map((l) => '${l.serviceId}:${l.quantity}:${l.pricePaise}:${l.employeeId ?? ''}').join(',')}';
 
 /// Debounced, sequential draft autosaver.
@@ -141,7 +142,10 @@ class DraftAutosaver {
   }
 
   void onCartChanged(CartState? previous, CartState next) {
-    if (next.isEmpty) {
+    // A cart with a billing session but no lines yet (employee and/or
+    // customer captured, Task 5.1) is a REAL draft — persist it. Only
+    // a cart with neither lines nor session is finished/empty.
+    if (next.isEmpty && !next.hasSession) {
       _timer?.cancel();
       _pending = null;
       final finishedId = previous?.draftId;

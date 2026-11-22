@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+/// Sentinel [StudioBranding.logoAssetPath] value meaning "the embedded
+/// original D POISE logo" (see poise_logo_data.dart). Only the D POISE
+/// preset uses it; other studios keep the typographic mark until they
+/// can supply their own logo.
+const poiseLogoAssetKey = 'embedded:poise-logo';
+
 /// White-label studio identity + configuration. This is the ONLY source of
 /// studio name, colours, contact, tax and payment details in the app —
 /// shared widgets and business logic never hardcode a brand.
@@ -23,6 +29,7 @@ class StudioBranding {
     this.currencyCode = 'INR',
     this.invoicePrefix = 'INV',
     this.invoiceFooter,
+    this.dark = false,
   });
 
   final String businessName;
@@ -45,6 +52,12 @@ class StudioBranding {
   final String invoicePrefix;
   final String? invoiceFooter;
 
+  /// Dark design system (Task 5.1): near-black surfaces with the
+  /// studio's primary as the accent. The D POISE preset is dark
+  /// (black & gold); other presets keep the light system until their
+  /// studio chooses otherwise.
+  final bool dark;
+
   StudioBranding copyWith({
     String? businessName,
     String? tagline,
@@ -60,6 +73,7 @@ class StudioBranding {
     String? currencyCode,
     String? invoicePrefix,
     String? invoiceFooter,
+    bool? dark,
   }) {
     return StudioBranding(
       businessName: businessName ?? this.businessName,
@@ -76,6 +90,7 @@ class StudioBranding {
       currencyCode: currencyCode ?? this.currencyCode,
       invoicePrefix: invoicePrefix ?? this.invoicePrefix,
       invoiceFooter: invoiceFooter ?? this.invoiceFooter,
+      dark: dark ?? this.dark,
     );
   }
 }
@@ -91,6 +106,8 @@ class BrandingPreset {
     this.businessName,
     this.tagline,
     this.isDemo = false,
+    this.dark = false,
+    this.logoAssetPath,
   });
 
   final String id;
@@ -100,26 +117,32 @@ class BrandingPreset {
   final String? businessName;
   final String? tagline;
   final bool isDemo;
+  final bool dark;
+  final String? logoAssetPath;
 }
 
 const dpoiseDemoBranding = StudioBranding(
   businessName: 'D POISE',
   tagline: 'Groom Studio',
-  primaryColor: Color(0xFF1B3A2F),
+  primaryColor: Color(0xFFF5D442),
   secondaryColor: Color(0xFFC9A96A),
   invoicePrefix: 'DP',
   invoiceFooter: 'Thank you for visiting D POISE.',
+  logoAssetPath: poiseLogoAssetKey,
+  dark: true,
 );
 
 const brandingPresets = <BrandingPreset>[
   BrandingPreset(
     id: 'dpoise_demo',
     label: 'D POISE — Demo',
-    primary: Color(0xFF1B3A2F),
+    primary: Color(0xFFF5D442),
     secondary: Color(0xFFC9A96A),
     businessName: 'D POISE',
     tagline: 'Groom Studio',
     isDemo: true,
+    dark: true,
+    logoAssetPath: poiseLogoAssetKey,
   ),
   BrandingPreset(
     id: 'classic_charcoal',

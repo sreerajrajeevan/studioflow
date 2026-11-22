@@ -20,5 +20,8 @@ final roleProvider = StateProvider<AppRole>((ref) => AppRole.owner);
 bool roleCanSee(AppRole role, String location) {
   if (role == AppRole.owner) return true;
   const staffAllowed = {'/billing', '/attendance', '/history', '/dashboard'};
+  // The billing FLOW has sub-routes (customer details, services) — all
+  // of /billing is one counter workflow for staff.
+  if (location.startsWith('/billing')) return true;
   return staffAllowed.contains(location);
 }

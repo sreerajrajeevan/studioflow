@@ -33,6 +33,7 @@ class DriftStudioConfigRepository implements StudioConfigRepository {
         currencyCode: row.currencyCode,
         invoicePrefix: row.invoicePrefix,
         invoiceFooter: row.invoiceFooter,
+        dark: row.dark,
       );
 
   @override
@@ -63,6 +64,7 @@ class DriftStudioConfigRepository implements StudioConfigRepository {
             currencyCode: Value(branding.currencyCode),
             invoicePrefix: Value(branding.invoicePrefix),
             invoiceFooter: Value(branding.invoiceFooter),
+            dark: Value(branding.dark),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -441,6 +443,14 @@ class DriftDraftStore implements DraftStore {
       await _db.into(_db.billDrafts).insertOnConflictUpdate(
             BillDraftsCompanion(
               draftId: Value(draftId),
+              billingEmployeeId: Value(draft.billingEmployeeId),
+              billingEmployeeName: Value(draft.billingEmployeeName),
+              customerName: Value(draft.customerName),
+              customerPhone: Value(draft.customerPhone),
+              customerNotes: Value(draft.customerNotes),
+              discountPercent: Value(draft.discountPercent),
+              discountFlatPaise: Value(draft.flatDiscountPaise),
+              taxBasisPoints: Value(draft.taxBasisPoints),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
@@ -458,6 +468,8 @@ class DriftDraftStore implements DraftStore {
                 pricePaise: line.pricePaise,
                 durationMinutes: Value(line.durationMinutes),
                 quantity: line.quantity,
+                employeeId: Value(line.employeeId),
+                employeeName: Value(line.employeeName),
                 position: i,
               ),
             );
@@ -477,6 +489,14 @@ class DriftDraftStore implements DraftStore {
         .get();
     return CartState(
       draftId: draft.draftId,
+      billingEmployeeId: draft.billingEmployeeId,
+      billingEmployeeName: draft.billingEmployeeName,
+      customerName: draft.customerName,
+      customerPhone: draft.customerPhone,
+      customerNotes: draft.customerNotes,
+      discountPercent: draft.discountPercent,
+      flatDiscountPaise: draft.discountFlatPaise,
+      taxBasisPoints: draft.taxBasisPoints,
       lines: [
         for (final line in lines)
           CartLine(
@@ -485,6 +505,8 @@ class DriftDraftStore implements DraftStore {
             pricePaise: line.pricePaise,
             durationMinutes: line.durationMinutes,
             quantity: line.quantity,
+            employeeId: line.employeeId,
+            employeeName: line.employeeName,
           ),
       ],
     );

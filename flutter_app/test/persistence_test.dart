@@ -88,7 +88,7 @@ void main() {
       );
       final version =
           await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
     });
 
     test('foreign keys are enforced', () async {
@@ -406,7 +406,7 @@ void main() {
         expect(recovered.totalPaise, 2 * 30000 + 60000);
         final version =
             await reopen.customSelect('PRAGMA user_version').getSingle();
-        expect(version.read<int>('user_version'), 5);
+        expect(version.read<int>('user_version'), 6);
         await reopen.close();
       } finally {
         await dir.delete(recursive: true);

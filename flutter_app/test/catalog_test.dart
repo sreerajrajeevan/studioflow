@@ -401,7 +401,7 @@ void main() {
       addTearDown(db.close);
       final version =
           await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 5,
+      expect(version.read<int>('user_version'), 6,
           reason: 'opening continues through the v2 -> v3 -> v4 -> v5 hops');
 
       final repo = DriftServiceRepository(db);

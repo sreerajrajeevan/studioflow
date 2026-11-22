@@ -81,3 +81,15 @@ Widgets depend on interfaces (`domain/repositories.dart`, `DraftStore`),
 never on SQL. Implementations are Drift-backed today; the Spring Boot
 sync implementation will sit behind the same seams, with the backend
 authoritative for finalized invoices and local SQLite as cache/outbox.
+
+
+## Schema v6 (Task 5.1)
+
+Additive only: `bill_drafts` and `bills` gain the billing-session
+fields (customer phone/notes, billing employee id + name snapshot);
+`studio_profiles` gains the dark-theme flag. The v5 -> v6 migration
+adds each column only when the live schema lacks it (checked via
+PRAGMA), because the bills table is created mid-chain from the
+current definition and may already carry them. Drafts now persist
+the COMPLETE cart state — session, discounts, tax and per-line
+employee assignments included.

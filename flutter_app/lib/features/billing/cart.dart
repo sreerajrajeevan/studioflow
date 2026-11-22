@@ -62,6 +62,11 @@ class CartState {
     this.discountPercent = 0,
     this.flatDiscountPaise = 0,
     this.taxBasisPoints = 0,
+    this.billingEmployeeId,
+    this.billingEmployeeName,
+    this.customerName = '',
+    this.customerPhone = '',
+    this.customerNotes = '',
   });
 
   /// Unique id of this bill draft, assigned on the first add. Checkout
@@ -81,6 +86,28 @@ class CartState {
   /// Tax rate in basis points (e.g. 1800 = 18% GST), applied by the
   /// engine on the discounted amount.
   final int taxBasisPoints;
+
+  /// Billing session (Task 5.1): the employee handling this bill,
+  /// chosen on the "Who's billing?" screen. The ID is the identifier —
+  /// the name rides along as a display/snapshot convenience. New lines
+  /// default to this employee (per-line override stays available).
+  final String? billingEmployeeId;
+  final String? billingEmployeeName;
+
+  /// Customer captured on the Customer Details screen. Name + mobile
+  /// are required by the new flow; notes are optional. All three are
+  /// stored on the draft and frozen into the invoice snapshot.
+  final String customerName;
+  final String customerPhone;
+  final String customerNotes;
+
+  /// True once the flow has captured anything worth persisting even
+  /// with zero lines (an employee and/or a customer). The autosaver
+  /// uses this: a session-only draft is real work, not an empty cart.
+  bool get hasSession =>
+      billingEmployeeId != null ||
+      customerName.isNotEmpty ||
+      customerPhone.isNotEmpty;
 
   bool get isEmpty => lines.isEmpty;
   int get itemCount => lines.fold(0, (sum, l) => sum + l.quantity);
@@ -109,6 +136,12 @@ class CartState {
     int? discountPercent,
     int? flatDiscountPaise,
     int? taxBasisPoints,
+    String? billingEmployeeId,
+    String? billingEmployeeName,
+    bool clearBillingEmployee = false,
+    String? customerName,
+    String? customerPhone,
+    String? customerNotes,
   }) =>
       CartState(
         draftId: draftId ?? this.draftId,
@@ -116,6 +149,15 @@ class CartState {
         discountPercent: discountPercent ?? this.discountPercent,
         flatDiscountPaise: flatDiscountPaise ?? this.flatDiscountPaise,
         taxBasisPoints: taxBasisPoints ?? this.taxBasisPoints,
+        billingEmployeeId: clearBillingEmployee
+            ? null
+            : (billingEmployeeId ?? this.billingEmployeeId),
+        billingEmployeeName: clearBillingEmployee
+            ? null
+            : (billingEmployeeName ?? this.billingEmployeeName),
+        customerName: customerName ?? this.customerName,
+        customerPhone: customerPhone ?? this.customerPhone,
+        customerNotes: customerNotes ?? this.customerNotes,
       );
 
   /// Total quantity of a service across ALL price variants (the billing
@@ -172,6 +214,10 @@ class CartNotifier extends StateNotifier<CartState> {
             pricePaise: service.pricePaise,
             durationMinutes: service.durationMinutes,
             quantity: 1,
+            // The billing-session employee performs new services by
+            // default (Task 5.1); the bill panel can override per line.
+            employeeId: state.billingEmployeeId,
+            employeeName: state.billingEmployeeName,
           ),
         ],
       );
@@ -295,6 +341,35 @@ class CartNotifier extends StateNotifier<CartState> {
       throw ArgumentError.value(bp, 'bp', 'must be 0..10000');
     }
     state = state.copyWith(taxBasisPoints: bp);
+  }
+
+  /// Starts (or updates) the billing session: who is billing. Assigns
+  /// a draft id when the session is the first thing captured, so the
+  /// session itself is autosaved before any service is added.
+  void setBillingEmployee(String employeeId, String employeeName) {
+    state = state.copyWith(
+      draftId: state.draftId ?? newDraftId(),
+      billingEmployeeId: employeeId,
+      billingEmployeeName: employeeName,
+    );
+  }
+
+  void clearBillingEmployee() {
+    state = state.copyWith(clearBillingEmployee: true);
+  }
+
+  /// Stores the customer captured by the Customer Details screen.
+  void setCustomer({
+    required String name,
+    required String phone,
+    String notes = '',
+  }) {
+    state = state.copyWith(
+      draftId: state.draftId ?? newDraftId(),
+      customerName: name.trim(),
+      customerPhone: phone.trim(),
+      customerNotes: notes.trim(),
+    );
   }
 
   void clear() => state = const CartState();

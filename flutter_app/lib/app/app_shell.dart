@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../branding/brand_logo.dart';
 import '../branding/studio_branding.dart';
 import '../core/breakpoints.dart';
 import 'state.dart';
@@ -138,8 +139,13 @@ class AppShell extends ConsumerWidget {
 
     final railDests = visible.where((d) => !d.inMoreMenu).toList();
     final moreDests = visible.where((d) => d.inMoreMenu).toList();
-    final selectedIndex = railDests.indexWhere((d) => d.location == location);
-    final moreSelected = moreDests.any((d) => d.location == location);
+    // Flow sub-routes (/billing/customer, /billing/services) keep the
+    // New Bill rail destination selected.
+    bool matches(NavDestinationDef d) =>
+        d.location == location ||
+        (d.location == '/billing' && location.startsWith('/billing/'));
+    final selectedIndex = railDests.indexWhere(matches);
+    final moreSelected = moreDests.any(matches);
 
     return Scaffold(
       body: Row(
@@ -147,7 +153,9 @@ class AppShell extends ConsumerWidget {
           Container(
             color: Theme.of(context).colorScheme.tertiaryContainer,
             child: NavigationRail(
-              backgroundColor: const Color(0xFF232323),
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF0B0B0B)
+                  : const Color(0xFF232323),
               selectedIndex: selectedIndex < 0 ? null : selectedIndex,
               onDestinationSelected: (i) => context.go(railDests[i].location),
               labelType: NavigationRailLabelType.all,
@@ -156,7 +164,7 @@ class AppShell extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    BrandMark(branding: branding, size: 46),
+                    BrandLogo(branding: branding, size: 46),
                     const SizedBox(height: 8),
                     SizedBox(
                       width: 72,
@@ -165,8 +173,10 @@ class AppShell extends ConsumerWidget {
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFFBF9F4),
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : const Color(0xFFFBF9F4),
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.6,
@@ -240,7 +250,9 @@ class AppShell extends ConsumerWidget {
                     ListTile(
                       leading: Icon(d.icon),
                       title: Text(d.label),
-                      selected: d.location == location,
+                      selected: d.location == location ||
+                          (d.location == '/billing' &&
+                              location.startsWith('/billing/')),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -299,7 +311,11 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = visible.where((d) => !d.inMoreMenu).toList();
-    final index = primary.indexWhere((d) => d.location == location);
+    final index = primary.indexWhere(
+      (d) =>
+          d.location == location ||
+          (d.location == '/billing' && location.startsWith('/billing/')),
+    );
     return NavigationBar(
       selectedIndex: index < 0 ? 0 : index,
       onDestinationSelected: (i) {

@@ -40,6 +40,10 @@ class StudioProfiles extends Table {
   TextColumn get invoicePrefix =>
       text().withDefault(const Constant('INV'))();
   TextColumn get invoiceFooter => text().nullable()();
+
+  /// Dark design system flag (Task 5.1) — the D POISE preset is dark
+  /// (black & gold); other studios keep the light system by default.
+  BoolColumn get dark => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -165,6 +169,13 @@ class SalaryAdvances extends Table {
 /// number, no payment state, and can be edited or deleted freely.
 class BillDrafts extends Table {
   TextColumn get draftId => text()();
+  // Billing session (Task 5.1): who is billing + the customer, captured
+  // before services are added and carried into the invoice snapshot.
+  TextColumn get billingEmployeeId => text().nullable()();
+  TextColumn get billingEmployeeName => text().nullable()();
+  TextColumn get customerName => text().withDefault(const Constant(''))();
+  TextColumn get customerPhone => text().withDefault(const Constant(''))();
+  TextColumn get customerNotes => text().withDefault(const Constant(''))();
   IntColumn get discountPercent =>
       integer().withDefault(const Constant(0))();
   IntColumn get discountFlatPaise =>
@@ -219,6 +230,12 @@ class Bills extends Table {
   IntColumn get localSeq => integer()();
   TextColumn get draftId => text().unique()();
   TextColumn get customerName => text().withDefault(const Constant(''))();
+  // Customer + billing-employee snapshot (Task 5.1), frozen at
+  // finalization like every other snapshot field on this table.
+  TextColumn get customerPhone => text().withDefault(const Constant(''))();
+  TextColumn get customerNotes => text().withDefault(const Constant(''))();
+  TextColumn get billingEmployeeId => text().nullable()();
+  TextColumn get billingEmployeeName => text().nullable()();
   // Studio snapshot
   TextColumn get snapshotBusinessName => text()();
   TextColumn get snapshotTagline => text().nullable()();
@@ -522,7 +539,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -551,6 +568,9 @@ class AppDatabase extends _$AppDatabase {
               case 4:
                 await _migrate4To5(m);
                 version = 5;
+              case 5:
+                await _migrate5To6(m);
+                version = 6;
               default:
                 throw StateError(
                   'No migration defined from schema v$version to v$to',
@@ -638,6 +658,50 @@ class AppDatabase extends _$AppDatabase {
     await m.createTable(payrollPayments);
     await m.createTable(payrollAuditEvents);
     await m.createTable(payrollAdvanceLinks);
+  }
+
+
+  /// v5 -> v6 (Task 5.1): billing-session fields. Studio profiles gain
+  /// the dark-theme flag; drafts and finalized bills gain the customer
+  /// phone/notes and the billing employee (id + name snapshot). All
+  /// additive with constant defaults — no row is rewritten.
+  Future<void> _migrate5To6(Migrator m) async {
+    await _addColumnIfMissing(m, studioProfiles, studioProfiles.dark);
+    await _addColumnIfMissing(m, billDrafts, billDrafts.billingEmployeeId);
+    await _addColumnIfMissing(m, billDrafts, billDrafts.billingEmployeeName);
+    await _addColumnIfMissing(m, billDrafts, billDrafts.customerName);
+    await _addColumnIfMissing(m, billDrafts, billDrafts.customerPhone);
+    await _addColumnIfMissing(m, billDrafts, billDrafts.customerNotes);
+    await _addColumnIfMissing(m, bills, bills.customerPhone);
+    await _addColumnIfMissing(m, bills, bills.customerNotes);
+    await _addColumnIfMissing(m, bills, bills.billingEmployeeId);
+    await _addColumnIfMissing(m, bills, bills.billingEmployeeName);
+  }
+
+  /// Adds [column] to [table] when the live schema lacks it — and only
+  /// then. Two real cases need the check rather than a blind ALTER:
+  /// the bills table is CREATED by the v2 -> v3 hop from the CURRENT
+  /// table definition, so databases that started at v2/v3 already carry
+  /// the newest bills columns when this hop runs; and a database whose
+  /// tables predate a table's introduction must not be failed by an
+  /// ALTER against a table it does not have. On a production database
+  /// (every table present, columns absent) this behaves exactly like a
+  /// plain addColumn.
+  Future<void> _addColumnIfMissing(
+    Migrator m,
+    TableInfo table,
+    GeneratedColumn column,
+  ) async {
+    final tables = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable.withString(table.actualTableName)],
+    ).get();
+    if (tables.isEmpty) return;
+    final rows = await customSelect(
+      'PRAGMA table_info("' + table.actualTableName + '")',
+    ).get();
+    final exists = rows.any((r) => r.data['name'] == column.name);
+    if (!exists) await m.addColumn(table, column);
   }
 
   Future<void> _migrate3To4(Migrator m) async {

@@ -27,10 +27,32 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+
+  /// Drives the Task 5.1 flow from startup to the services screen:
+  /// splash forwards to employee selection, pick the first employee,
+  /// enter a valid customer, continue to billing.
+  Future<void> driveToServices(WidgetTester tester) async {
+    expect(find.text("Who's billing?"), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('employee_card_emp_1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Customer Details'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('customer_name_field')),
+      'Test Customer',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('customer_phone_field')),
+      '98765 43210',
+    );
+    await tester.tap(find.byKey(const ValueKey('continue_to_billing')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('service_grid')), findsOneWidget);
+  }
+
   testWidgets('tablet landscape: 3-pane POS with visible bill panel',
       (tester) async {
     await pumpApp(tester, const Size(1280, 800));
-    expect(find.text('New bill'), findsWidgets);
+    await driveToServices(tester);
     expect(find.text('Current bill'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
     expect(find.byKey(const ValueKey('checkout_button')), findsOneWidget);
@@ -44,6 +66,7 @@ void main() {
   testWidgets('tablet portrait: grid + sticky bill summary, no clipped panel',
       (tester) async {
     await pumpApp(tester, const Size(800, 1280));
+    await driveToServices(tester);
     expect(find.text('Haircut'), findsOneWidget);
     expect(find.byKey(const ValueKey('checkout_button')), findsOneWidget);
     expect(find.text('No items yet'), findsOneWidget);
@@ -52,7 +75,7 @@ void main() {
   testWidgets('mobile: dedicated composition with bottom summary',
       (tester) async {
     await pumpApp(tester, const Size(390, 844));
-    expect(find.text('D POISE'), findsWidgets);
+    await driveToServices(tester);
     expect(find.text('Haircut'), findsOneWidget);
     expect(find.byKey(const ValueKey('checkout_button')), findsOneWidget);
   });
@@ -60,6 +83,7 @@ void main() {
   testWidgets('tapping a service updates the bill total immediately',
       (tester) async {
     await pumpApp(tester, const Size(1280, 800));
+    await driveToServices(tester);
     await tester.tap(find.byKey(const ValueKey('service_tile_svc_haircut')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('qty_badge_svc_haircut')), findsOneWidget);
@@ -106,6 +130,7 @@ void main() {
   testWidgets('rotation: cart survives an orientation change',
       (tester) async {
     await pumpApp(tester, const Size(1280, 800));
+    await driveToServices(tester);
     await tester.tap(find.byKey(const ValueKey('service_tile_svc_haircut')));
     await tester.pumpAndSettle();
     expect(find.text('₹300'), findsWidgets);
@@ -131,8 +156,11 @@ void main() {
   });
 
   test('dynamic theme: too-light primaries are deepened for readability', () {
+    // The light-theme readability rule: the D POISE preset is dark
+    // now (Task 5.1), so exercise the light path explicitly.
     final pale = dpoiseDemoBranding.copyWith(
       primaryColor: const Color(0xFFFFE066),
+      dark: false,
     );
     final theme = ThemeConfig.buildTheme(pale);
     expect(

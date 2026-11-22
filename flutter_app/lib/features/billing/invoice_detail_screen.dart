@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -84,6 +85,27 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
           ],
         ],
       ),
+      bottomNavigationBar: bill == null
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+                child: FilledButton.icon(
+                  key: const ValueKey('new_bill_button'),
+                  onPressed: () {
+                    // Flow rule (Task 5.1): after a bill, return to
+                    // employee selection for the next customer. The
+                    // cart was already cleared at finalization.
+                    final router = GoRouter.of(context);
+                    final nav = Navigator.of(context);
+                    if (nav.canPop()) nav.pop();
+                    router.go('/billing');
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('New Bill'),
+                ),
+              ),
+            ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -274,6 +296,10 @@ class _ReceiptCard extends StatelessWidget {
             _kv(context, 'Date', formatInvoiceDateTime(doc.issuedAt)),
             if (doc.customerName.isNotEmpty)
               _kv(context, 'Customer', doc.customerName),
+            if (doc.customerPhone.isNotEmpty)
+              _kv(context, 'Mobile', doc.customerPhone),
+            if (doc.billingEmployeeName != null)
+              _kv(context, 'Billed by', doc.billingEmployeeName!),
             if (doc.isVoided)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),

@@ -67,6 +67,13 @@ class DriftBillingRepository implements BillingRepository {
     required String actor,
     String customerName = '',
   }) async {
+    // Task 5.1: the customer phone/notes and billing employee ride on
+    // the CART (captured by the new flow and stored on the draft), so
+    // the snapshot always matches the persisted draft exactly.
+    final customerPhone = cart.customerPhone;
+    final customerNotes = cart.customerNotes;
+    final billingEmployeeId = cart.billingEmployeeId;
+    final billingEmployeeName = cart.billingEmployeeName;
     final draftId = cart.draftId;
     if (draftId == null || cart.isEmpty) {
       throw ArgumentError('Cannot finalize an empty cart.');
@@ -137,6 +144,10 @@ class DriftBillingRepository implements BillingRepository {
               localSeq: Value(seq),
               draftId: Value(draftId),
               customerName: Value(customerName.trim()),
+              customerPhone: Value(customerPhone.trim()),
+              customerNotes: Value(customerNotes.trim()),
+              billingEmployeeId: Value(billingEmployeeId),
+              billingEmployeeName: Value(billingEmployeeName),
               snapshotBusinessName: Value(studio.businessName),
               snapshotTagline: Value(studio.tagline),
               snapshotAddress: Value(studio.address),
@@ -247,6 +258,10 @@ class DriftBillingRepository implements BillingRepository {
       localSeq: row.localSeq,
       draftId: row.draftId,
       customerName: row.customerName,
+      customerPhone: row.customerPhone,
+      customerNotes: row.customerNotes,
+      billingEmployeeId: row.billingEmployeeId,
+      billingEmployeeName: row.billingEmployeeName,
       studio: StudioSnapshot(
         businessName: row.snapshotBusinessName,
         tagline: row.snapshotTagline,

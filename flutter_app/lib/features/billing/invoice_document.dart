@@ -25,6 +25,8 @@ class InvoiceDocument {
         provisionalRef = bill.provisionalRef,
         isVoided = bill.status == FinalizedBillStatus.voided,
         customerName = bill.customerName,
+        customerPhone = bill.customerPhone,
+        billingEmployeeName = bill.billingEmployeeName,
         issuedAt = bill.finalizedAt,
         lines = bill.lines,
         subtotalPaise = bill.subtotalPaise,
@@ -47,6 +49,8 @@ class InvoiceDocument {
   final String provisionalRef;
   final bool isVoided;
   final String customerName;
+  final String customerPhone;
+  final String? billingEmployeeName;
   final DateTime issuedAt;
   final List<BillLine> lines;
   final int subtotalPaise;
@@ -124,6 +128,12 @@ String formatTextReceipt(InvoiceDocument doc, {int width = 40}) {
   out.writeln(row('Date', formatInvoiceDateTime(doc.issuedAt)));
   if (doc.customerName.isNotEmpty) {
     out.writeln(row('Customer', doc.customerName));
+  }
+  if (doc.customerPhone.isNotEmpty) {
+    out.writeln(row('Mobile', doc.customerPhone));
+  }
+  if (doc.billingEmployeeName != null) {
+    out.writeln(row('Billed by', doc.billingEmployeeName!));
   }
   if (doc.isVoided) out.writeln(center('*** VOIDED ***'));
   out.writeln('-' * width);
@@ -226,6 +236,10 @@ Future<Uint8List> buildInvoicePdf(InvoiceDocument doc) async {
             moneyRow('Date', formatInvoiceDateTime(doc.issuedAt)),
             if (doc.customerName.isNotEmpty)
               moneyRow('Customer', doc.customerName),
+            if (doc.customerPhone.isNotEmpty)
+              moneyRow('Mobile', doc.customerPhone),
+            if (doc.billingEmployeeName != null)
+              moneyRow('Billed by', doc.billingEmployeeName!),
             if (doc.isVoided)
               pw.Text('*** VOIDED ***',
                   textAlign: pw.TextAlign.center,

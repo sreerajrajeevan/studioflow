@@ -105,6 +105,15 @@ class $StudioProfilesTable extends StudioProfiles
   late final GeneratedColumn<String> invoiceFooter = GeneratedColumn<String>(
       'invoice_footer', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _darkMeta = const VerificationMeta('dark');
+  @override
+  late final GeneratedColumn<bool> dark = GeneratedColumn<bool>(
+      'dark', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("dark" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -134,6 +143,7 @@ class $StudioProfilesTable extends StudioProfiles
         currencyCode,
         invoicePrefix,
         invoiceFooter,
+        dark,
         createdAt,
         updatedAt
       ];
@@ -226,6 +236,10 @@ class $StudioProfilesTable extends StudioProfiles
           invoiceFooter.isAcceptableOrUnknown(
               data['invoice_footer']!, _invoiceFooterMeta));
     }
+    if (data.containsKey('dark')) {
+      context.handle(
+          _darkMeta, dark.isAcceptableOrUnknown(data['dark']!, _darkMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -277,6 +291,8 @@ class $StudioProfilesTable extends StudioProfiles
           .read(DriftSqlType.string, data['${effectivePrefix}invoice_prefix'])!,
       invoiceFooter: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}invoice_footer']),
+      dark: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}dark'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -306,6 +322,10 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
   final String currencyCode;
   final String invoicePrefix;
   final String? invoiceFooter;
+
+  /// Dark design system flag (Task 5.1) — the D POISE preset is dark
+  /// (black & gold); other studios keep the light system by default.
+  final bool dark;
   final DateTime createdAt;
   final DateTime updatedAt;
   const StudioProfile(
@@ -324,6 +344,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
       required this.currencyCode,
       required this.invoicePrefix,
       this.invoiceFooter,
+      required this.dark,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -358,6 +379,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
     if (!nullToAbsent || invoiceFooter != null) {
       map['invoice_footer'] = Variable<String>(invoiceFooter);
     }
+    map['dark'] = Variable<bool>(dark);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -391,6 +413,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
       invoiceFooter: invoiceFooter == null && nullToAbsent
           ? const Value.absent()
           : Value(invoiceFooter),
+      dark: Value(dark),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -415,6 +438,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
       currencyCode: serializer.fromJson<String>(json['currencyCode']),
       invoicePrefix: serializer.fromJson<String>(json['invoicePrefix']),
       invoiceFooter: serializer.fromJson<String?>(json['invoiceFooter']),
+      dark: serializer.fromJson<bool>(json['dark']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -438,6 +462,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
       'currencyCode': serializer.toJson<String>(currencyCode),
       'invoicePrefix': serializer.toJson<String>(invoicePrefix),
       'invoiceFooter': serializer.toJson<String?>(invoiceFooter),
+      'dark': serializer.toJson<bool>(dark),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -459,6 +484,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
           String? currencyCode,
           String? invoicePrefix,
           Value<String?> invoiceFooter = const Value.absent(),
+          bool? dark,
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       StudioProfile(
@@ -479,6 +505,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
         invoicePrefix: invoicePrefix ?? this.invoicePrefix,
         invoiceFooter:
             invoiceFooter.present ? invoiceFooter.value : this.invoiceFooter,
+        dark: dark ?? this.dark,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -513,6 +540,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
       invoiceFooter: data.invoiceFooter.present
           ? data.invoiceFooter.value
           : this.invoiceFooter,
+      dark: data.dark.present ? data.dark.value : this.dark,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -536,6 +564,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
           ..write('currencyCode: $currencyCode, ')
           ..write('invoicePrefix: $invoicePrefix, ')
           ..write('invoiceFooter: $invoiceFooter, ')
+          ..write('dark: $dark, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -559,6 +588,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
       currencyCode,
       invoicePrefix,
       invoiceFooter,
+      dark,
       createdAt,
       updatedAt);
   @override
@@ -580,6 +610,7 @@ class StudioProfile extends DataClass implements Insertable<StudioProfile> {
           other.currencyCode == this.currencyCode &&
           other.invoicePrefix == this.invoicePrefix &&
           other.invoiceFooter == this.invoiceFooter &&
+          other.dark == this.dark &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -600,6 +631,7 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
   final Value<String> currencyCode;
   final Value<String> invoicePrefix;
   final Value<String?> invoiceFooter;
+  final Value<bool> dark;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const StudioProfilesCompanion({
@@ -618,6 +650,7 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
     this.currencyCode = const Value.absent(),
     this.invoicePrefix = const Value.absent(),
     this.invoiceFooter = const Value.absent(),
+    this.dark = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -637,6 +670,7 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
     this.currencyCode = const Value.absent(),
     this.invoicePrefix = const Value.absent(),
     this.invoiceFooter = const Value.absent(),
+    this.dark = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
   })  : businessName = Value(businessName),
@@ -660,6 +694,7 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
     Expression<String>? currencyCode,
     Expression<String>? invoicePrefix,
     Expression<String>? invoiceFooter,
+    Expression<bool>? dark,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -679,6 +714,7 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
       if (currencyCode != null) 'currency_code': currencyCode,
       if (invoicePrefix != null) 'invoice_prefix': invoicePrefix,
       if (invoiceFooter != null) 'invoice_footer': invoiceFooter,
+      if (dark != null) 'dark': dark,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -700,6 +736,7 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
       Value<String>? currencyCode,
       Value<String>? invoicePrefix,
       Value<String?>? invoiceFooter,
+      Value<bool>? dark,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt}) {
     return StudioProfilesCompanion(
@@ -718,6 +755,7 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
       currencyCode: currencyCode ?? this.currencyCode,
       invoicePrefix: invoicePrefix ?? this.invoicePrefix,
       invoiceFooter: invoiceFooter ?? this.invoiceFooter,
+      dark: dark ?? this.dark,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -771,6 +809,9 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
     if (invoiceFooter.present) {
       map['invoice_footer'] = Variable<String>(invoiceFooter.value);
     }
+    if (dark.present) {
+      map['dark'] = Variable<bool>(dark.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -798,6 +839,7 @@ class StudioProfilesCompanion extends UpdateCompanion<StudioProfile> {
           ..write('currencyCode: $currencyCode, ')
           ..write('invoicePrefix: $invoicePrefix, ')
           ..write('invoiceFooter: $invoiceFooter, ')
+          ..write('dark: $dark, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2213,6 +2255,42 @@ class $BillDraftsTable extends BillDrafts
   late final GeneratedColumn<String> draftId = GeneratedColumn<String>(
       'draft_id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _billingEmployeeIdMeta =
+      const VerificationMeta('billingEmployeeId');
+  @override
+  late final GeneratedColumn<String> billingEmployeeId =
+      GeneratedColumn<String>('billing_employee_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _billingEmployeeNameMeta =
+      const VerificationMeta('billingEmployeeName');
+  @override
+  late final GeneratedColumn<String> billingEmployeeName =
+      GeneratedColumn<String>('billing_employee_name', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _customerNameMeta =
+      const VerificationMeta('customerName');
+  @override
+  late final GeneratedColumn<String> customerName = GeneratedColumn<String>(
+      'customer_name', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _customerPhoneMeta =
+      const VerificationMeta('customerPhone');
+  @override
+  late final GeneratedColumn<String> customerPhone = GeneratedColumn<String>(
+      'customer_phone', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _customerNotesMeta =
+      const VerificationMeta('customerNotes');
+  @override
+  late final GeneratedColumn<String> customerNotes = GeneratedColumn<String>(
+      'customer_notes', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
   static const VerificationMeta _discountPercentMeta =
       const VerificationMeta('discountPercent');
   @override
@@ -2252,6 +2330,11 @@ class $BillDraftsTable extends BillDrafts
   @override
   List<GeneratedColumn> get $columns => [
         draftId,
+        billingEmployeeId,
+        billingEmployeeName,
+        customerName,
+        customerPhone,
+        customerNotes,
         discountPercent,
         discountFlatPaise,
         taxBasisPoints,
@@ -2273,6 +2356,36 @@ class $BillDraftsTable extends BillDrafts
           draftId.isAcceptableOrUnknown(data['draft_id']!, _draftIdMeta));
     } else if (isInserting) {
       context.missing(_draftIdMeta);
+    }
+    if (data.containsKey('billing_employee_id')) {
+      context.handle(
+          _billingEmployeeIdMeta,
+          billingEmployeeId.isAcceptableOrUnknown(
+              data['billing_employee_id']!, _billingEmployeeIdMeta));
+    }
+    if (data.containsKey('billing_employee_name')) {
+      context.handle(
+          _billingEmployeeNameMeta,
+          billingEmployeeName.isAcceptableOrUnknown(
+              data['billing_employee_name']!, _billingEmployeeNameMeta));
+    }
+    if (data.containsKey('customer_name')) {
+      context.handle(
+          _customerNameMeta,
+          customerName.isAcceptableOrUnknown(
+              data['customer_name']!, _customerNameMeta));
+    }
+    if (data.containsKey('customer_phone')) {
+      context.handle(
+          _customerPhoneMeta,
+          customerPhone.isAcceptableOrUnknown(
+              data['customer_phone']!, _customerPhoneMeta));
+    }
+    if (data.containsKey('customer_notes')) {
+      context.handle(
+          _customerNotesMeta,
+          customerNotes.isAcceptableOrUnknown(
+              data['customer_notes']!, _customerNotesMeta));
     }
     if (data.containsKey('discount_percent')) {
       context.handle(
@@ -2315,6 +2428,16 @@ class $BillDraftsTable extends BillDrafts
     return BillDraft(
       draftId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}draft_id'])!,
+      billingEmployeeId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}billing_employee_id']),
+      billingEmployeeName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}billing_employee_name']),
+      customerName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_name'])!,
+      customerPhone: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_phone'])!,
+      customerNotes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_notes'])!,
       discountPercent: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}discount_percent'])!,
       discountFlatPaise: attachedDatabase.typeMapping.read(
@@ -2336,6 +2459,11 @@ class $BillDraftsTable extends BillDrafts
 
 class BillDraft extends DataClass implements Insertable<BillDraft> {
   final String draftId;
+  final String? billingEmployeeId;
+  final String? billingEmployeeName;
+  final String customerName;
+  final String customerPhone;
+  final String customerNotes;
   final int discountPercent;
   final int discountFlatPaise;
   final int taxBasisPoints;
@@ -2343,6 +2471,11 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
   final DateTime updatedAt;
   const BillDraft(
       {required this.draftId,
+      this.billingEmployeeId,
+      this.billingEmployeeName,
+      required this.customerName,
+      required this.customerPhone,
+      required this.customerNotes,
       required this.discountPercent,
       required this.discountFlatPaise,
       required this.taxBasisPoints,
@@ -2352,6 +2485,15 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['draft_id'] = Variable<String>(draftId);
+    if (!nullToAbsent || billingEmployeeId != null) {
+      map['billing_employee_id'] = Variable<String>(billingEmployeeId);
+    }
+    if (!nullToAbsent || billingEmployeeName != null) {
+      map['billing_employee_name'] = Variable<String>(billingEmployeeName);
+    }
+    map['customer_name'] = Variable<String>(customerName);
+    map['customer_phone'] = Variable<String>(customerPhone);
+    map['customer_notes'] = Variable<String>(customerNotes);
     map['discount_percent'] = Variable<int>(discountPercent);
     map['discount_flat_paise'] = Variable<int>(discountFlatPaise);
     map['tax_basis_points'] = Variable<int>(taxBasisPoints);
@@ -2363,6 +2505,15 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
   BillDraftsCompanion toCompanion(bool nullToAbsent) {
     return BillDraftsCompanion(
       draftId: Value(draftId),
+      billingEmployeeId: billingEmployeeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(billingEmployeeId),
+      billingEmployeeName: billingEmployeeName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(billingEmployeeName),
+      customerName: Value(customerName),
+      customerPhone: Value(customerPhone),
+      customerNotes: Value(customerNotes),
       discountPercent: Value(discountPercent),
       discountFlatPaise: Value(discountFlatPaise),
       taxBasisPoints: Value(taxBasisPoints),
@@ -2376,6 +2527,13 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BillDraft(
       draftId: serializer.fromJson<String>(json['draftId']),
+      billingEmployeeId:
+          serializer.fromJson<String?>(json['billingEmployeeId']),
+      billingEmployeeName:
+          serializer.fromJson<String?>(json['billingEmployeeName']),
+      customerName: serializer.fromJson<String>(json['customerName']),
+      customerPhone: serializer.fromJson<String>(json['customerPhone']),
+      customerNotes: serializer.fromJson<String>(json['customerNotes']),
       discountPercent: serializer.fromJson<int>(json['discountPercent']),
       discountFlatPaise: serializer.fromJson<int>(json['discountFlatPaise']),
       taxBasisPoints: serializer.fromJson<int>(json['taxBasisPoints']),
@@ -2388,6 +2546,11 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'draftId': serializer.toJson<String>(draftId),
+      'billingEmployeeId': serializer.toJson<String?>(billingEmployeeId),
+      'billingEmployeeName': serializer.toJson<String?>(billingEmployeeName),
+      'customerName': serializer.toJson<String>(customerName),
+      'customerPhone': serializer.toJson<String>(customerPhone),
+      'customerNotes': serializer.toJson<String>(customerNotes),
       'discountPercent': serializer.toJson<int>(discountPercent),
       'discountFlatPaise': serializer.toJson<int>(discountFlatPaise),
       'taxBasisPoints': serializer.toJson<int>(taxBasisPoints),
@@ -2398,6 +2561,11 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
 
   BillDraft copyWith(
           {String? draftId,
+          Value<String?> billingEmployeeId = const Value.absent(),
+          Value<String?> billingEmployeeName = const Value.absent(),
+          String? customerName,
+          String? customerPhone,
+          String? customerNotes,
           int? discountPercent,
           int? discountFlatPaise,
           int? taxBasisPoints,
@@ -2405,6 +2573,15 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
           DateTime? updatedAt}) =>
       BillDraft(
         draftId: draftId ?? this.draftId,
+        billingEmployeeId: billingEmployeeId.present
+            ? billingEmployeeId.value
+            : this.billingEmployeeId,
+        billingEmployeeName: billingEmployeeName.present
+            ? billingEmployeeName.value
+            : this.billingEmployeeName,
+        customerName: customerName ?? this.customerName,
+        customerPhone: customerPhone ?? this.customerPhone,
+        customerNotes: customerNotes ?? this.customerNotes,
         discountPercent: discountPercent ?? this.discountPercent,
         discountFlatPaise: discountFlatPaise ?? this.discountFlatPaise,
         taxBasisPoints: taxBasisPoints ?? this.taxBasisPoints,
@@ -2414,6 +2591,21 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
   BillDraft copyWithCompanion(BillDraftsCompanion data) {
     return BillDraft(
       draftId: data.draftId.present ? data.draftId.value : this.draftId,
+      billingEmployeeId: data.billingEmployeeId.present
+          ? data.billingEmployeeId.value
+          : this.billingEmployeeId,
+      billingEmployeeName: data.billingEmployeeName.present
+          ? data.billingEmployeeName.value
+          : this.billingEmployeeName,
+      customerName: data.customerName.present
+          ? data.customerName.value
+          : this.customerName,
+      customerPhone: data.customerPhone.present
+          ? data.customerPhone.value
+          : this.customerPhone,
+      customerNotes: data.customerNotes.present
+          ? data.customerNotes.value
+          : this.customerNotes,
       discountPercent: data.discountPercent.present
           ? data.discountPercent.value
           : this.discountPercent,
@@ -2432,6 +2624,11 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
   String toString() {
     return (StringBuffer('BillDraft(')
           ..write('draftId: $draftId, ')
+          ..write('billingEmployeeId: $billingEmployeeId, ')
+          ..write('billingEmployeeName: $billingEmployeeName, ')
+          ..write('customerName: $customerName, ')
+          ..write('customerPhone: $customerPhone, ')
+          ..write('customerNotes: $customerNotes, ')
           ..write('discountPercent: $discountPercent, ')
           ..write('discountFlatPaise: $discountFlatPaise, ')
           ..write('taxBasisPoints: $taxBasisPoints, ')
@@ -2442,13 +2639,28 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
   }
 
   @override
-  int get hashCode => Object.hash(draftId, discountPercent, discountFlatPaise,
-      taxBasisPoints, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      draftId,
+      billingEmployeeId,
+      billingEmployeeName,
+      customerName,
+      customerPhone,
+      customerNotes,
+      discountPercent,
+      discountFlatPaise,
+      taxBasisPoints,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is BillDraft &&
           other.draftId == this.draftId &&
+          other.billingEmployeeId == this.billingEmployeeId &&
+          other.billingEmployeeName == this.billingEmployeeName &&
+          other.customerName == this.customerName &&
+          other.customerPhone == this.customerPhone &&
+          other.customerNotes == this.customerNotes &&
           other.discountPercent == this.discountPercent &&
           other.discountFlatPaise == this.discountFlatPaise &&
           other.taxBasisPoints == this.taxBasisPoints &&
@@ -2458,6 +2670,11 @@ class BillDraft extends DataClass implements Insertable<BillDraft> {
 
 class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
   final Value<String> draftId;
+  final Value<String?> billingEmployeeId;
+  final Value<String?> billingEmployeeName;
+  final Value<String> customerName;
+  final Value<String> customerPhone;
+  final Value<String> customerNotes;
   final Value<int> discountPercent;
   final Value<int> discountFlatPaise;
   final Value<int> taxBasisPoints;
@@ -2466,6 +2683,11 @@ class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
   final Value<int> rowid;
   const BillDraftsCompanion({
     this.draftId = const Value.absent(),
+    this.billingEmployeeId = const Value.absent(),
+    this.billingEmployeeName = const Value.absent(),
+    this.customerName = const Value.absent(),
+    this.customerPhone = const Value.absent(),
+    this.customerNotes = const Value.absent(),
     this.discountPercent = const Value.absent(),
     this.discountFlatPaise = const Value.absent(),
     this.taxBasisPoints = const Value.absent(),
@@ -2475,6 +2697,11 @@ class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
   });
   BillDraftsCompanion.insert({
     required String draftId,
+    this.billingEmployeeId = const Value.absent(),
+    this.billingEmployeeName = const Value.absent(),
+    this.customerName = const Value.absent(),
+    this.customerPhone = const Value.absent(),
+    this.customerNotes = const Value.absent(),
     this.discountPercent = const Value.absent(),
     this.discountFlatPaise = const Value.absent(),
     this.taxBasisPoints = const Value.absent(),
@@ -2486,6 +2713,11 @@ class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
         updatedAt = Value(updatedAt);
   static Insertable<BillDraft> custom({
     Expression<String>? draftId,
+    Expression<String>? billingEmployeeId,
+    Expression<String>? billingEmployeeName,
+    Expression<String>? customerName,
+    Expression<String>? customerPhone,
+    Expression<String>? customerNotes,
     Expression<int>? discountPercent,
     Expression<int>? discountFlatPaise,
     Expression<int>? taxBasisPoints,
@@ -2495,6 +2727,12 @@ class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
   }) {
     return RawValuesInsertable({
       if (draftId != null) 'draft_id': draftId,
+      if (billingEmployeeId != null) 'billing_employee_id': billingEmployeeId,
+      if (billingEmployeeName != null)
+        'billing_employee_name': billingEmployeeName,
+      if (customerName != null) 'customer_name': customerName,
+      if (customerPhone != null) 'customer_phone': customerPhone,
+      if (customerNotes != null) 'customer_notes': customerNotes,
       if (discountPercent != null) 'discount_percent': discountPercent,
       if (discountFlatPaise != null) 'discount_flat_paise': discountFlatPaise,
       if (taxBasisPoints != null) 'tax_basis_points': taxBasisPoints,
@@ -2506,6 +2744,11 @@ class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
 
   BillDraftsCompanion copyWith(
       {Value<String>? draftId,
+      Value<String?>? billingEmployeeId,
+      Value<String?>? billingEmployeeName,
+      Value<String>? customerName,
+      Value<String>? customerPhone,
+      Value<String>? customerNotes,
       Value<int>? discountPercent,
       Value<int>? discountFlatPaise,
       Value<int>? taxBasisPoints,
@@ -2514,6 +2757,11 @@ class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
       Value<int>? rowid}) {
     return BillDraftsCompanion(
       draftId: draftId ?? this.draftId,
+      billingEmployeeId: billingEmployeeId ?? this.billingEmployeeId,
+      billingEmployeeName: billingEmployeeName ?? this.billingEmployeeName,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
+      customerNotes: customerNotes ?? this.customerNotes,
       discountPercent: discountPercent ?? this.discountPercent,
       discountFlatPaise: discountFlatPaise ?? this.discountFlatPaise,
       taxBasisPoints: taxBasisPoints ?? this.taxBasisPoints,
@@ -2528,6 +2776,22 @@ class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
     final map = <String, Expression>{};
     if (draftId.present) {
       map['draft_id'] = Variable<String>(draftId.value);
+    }
+    if (billingEmployeeId.present) {
+      map['billing_employee_id'] = Variable<String>(billingEmployeeId.value);
+    }
+    if (billingEmployeeName.present) {
+      map['billing_employee_name'] =
+          Variable<String>(billingEmployeeName.value);
+    }
+    if (customerName.present) {
+      map['customer_name'] = Variable<String>(customerName.value);
+    }
+    if (customerPhone.present) {
+      map['customer_phone'] = Variable<String>(customerPhone.value);
+    }
+    if (customerNotes.present) {
+      map['customer_notes'] = Variable<String>(customerNotes.value);
     }
     if (discountPercent.present) {
       map['discount_percent'] = Variable<int>(discountPercent.value);
@@ -2554,6 +2818,11 @@ class BillDraftsCompanion extends UpdateCompanion<BillDraft> {
   String toString() {
     return (StringBuffer('BillDraftsCompanion(')
           ..write('draftId: $draftId, ')
+          ..write('billingEmployeeId: $billingEmployeeId, ')
+          ..write('billingEmployeeName: $billingEmployeeName, ')
+          ..write('customerName: $customerName, ')
+          ..write('customerPhone: $customerPhone, ')
+          ..write('customerNotes: $customerNotes, ')
           ..write('discountPercent: $discountPercent, ')
           ..write('discountFlatPaise: $discountFlatPaise, ')
           ..write('taxBasisPoints: $taxBasisPoints, ')
@@ -3136,6 +3405,34 @@ class $BillsTable extends Bills with TableInfo<$BillsTable, BillRow> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant(''));
+  static const VerificationMeta _customerPhoneMeta =
+      const VerificationMeta('customerPhone');
+  @override
+  late final GeneratedColumn<String> customerPhone = GeneratedColumn<String>(
+      'customer_phone', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _customerNotesMeta =
+      const VerificationMeta('customerNotes');
+  @override
+  late final GeneratedColumn<String> customerNotes = GeneratedColumn<String>(
+      'customer_notes', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _billingEmployeeIdMeta =
+      const VerificationMeta('billingEmployeeId');
+  @override
+  late final GeneratedColumn<String> billingEmployeeId =
+      GeneratedColumn<String>('billing_employee_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _billingEmployeeNameMeta =
+      const VerificationMeta('billingEmployeeName');
+  @override
+  late final GeneratedColumn<String> billingEmployeeName =
+      GeneratedColumn<String>('billing_employee_name', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _snapshotBusinessNameMeta =
       const VerificationMeta('snapshotBusinessName');
   @override
@@ -3284,6 +3581,10 @@ class $BillsTable extends Bills with TableInfo<$BillsTable, BillRow> {
         localSeq,
         draftId,
         customerName,
+        customerPhone,
+        customerNotes,
+        billingEmployeeId,
+        billingEmployeeName,
         snapshotBusinessName,
         snapshotTagline,
         snapshotAddress,
@@ -3348,6 +3649,30 @@ class $BillsTable extends Bills with TableInfo<$BillsTable, BillRow> {
           _customerNameMeta,
           customerName.isAcceptableOrUnknown(
               data['customer_name']!, _customerNameMeta));
+    }
+    if (data.containsKey('customer_phone')) {
+      context.handle(
+          _customerPhoneMeta,
+          customerPhone.isAcceptableOrUnknown(
+              data['customer_phone']!, _customerPhoneMeta));
+    }
+    if (data.containsKey('customer_notes')) {
+      context.handle(
+          _customerNotesMeta,
+          customerNotes.isAcceptableOrUnknown(
+              data['customer_notes']!, _customerNotesMeta));
+    }
+    if (data.containsKey('billing_employee_id')) {
+      context.handle(
+          _billingEmployeeIdMeta,
+          billingEmployeeId.isAcceptableOrUnknown(
+              data['billing_employee_id']!, _billingEmployeeIdMeta));
+    }
+    if (data.containsKey('billing_employee_name')) {
+      context.handle(
+          _billingEmployeeNameMeta,
+          billingEmployeeName.isAcceptableOrUnknown(
+              data['billing_employee_name']!, _billingEmployeeNameMeta));
     }
     if (data.containsKey('snapshot_business_name')) {
       context.handle(
@@ -3522,6 +3847,14 @@ class $BillsTable extends Bills with TableInfo<$BillsTable, BillRow> {
           .read(DriftSqlType.string, data['${effectivePrefix}draft_id'])!,
       customerName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}customer_name'])!,
+      customerPhone: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_phone'])!,
+      customerNotes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_notes'])!,
+      billingEmployeeId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}billing_employee_id']),
+      billingEmployeeName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}billing_employee_name']),
       snapshotBusinessName: attachedDatabase.typeMapping.read(
           DriftSqlType.string,
           data['${effectivePrefix}snapshot_business_name'])!,
@@ -3585,6 +3918,10 @@ class BillRow extends DataClass implements Insertable<BillRow> {
   final int localSeq;
   final String draftId;
   final String customerName;
+  final String customerPhone;
+  final String customerNotes;
+  final String? billingEmployeeId;
+  final String? billingEmployeeName;
   final String snapshotBusinessName;
   final String? snapshotTagline;
   final String snapshotAddress;
@@ -3614,6 +3951,10 @@ class BillRow extends DataClass implements Insertable<BillRow> {
       required this.localSeq,
       required this.draftId,
       required this.customerName,
+      required this.customerPhone,
+      required this.customerNotes,
+      this.billingEmployeeId,
+      this.billingEmployeeName,
       required this.snapshotBusinessName,
       this.snapshotTagline,
       required this.snapshotAddress,
@@ -3645,6 +3986,14 @@ class BillRow extends DataClass implements Insertable<BillRow> {
     map['local_seq'] = Variable<int>(localSeq);
     map['draft_id'] = Variable<String>(draftId);
     map['customer_name'] = Variable<String>(customerName);
+    map['customer_phone'] = Variable<String>(customerPhone);
+    map['customer_notes'] = Variable<String>(customerNotes);
+    if (!nullToAbsent || billingEmployeeId != null) {
+      map['billing_employee_id'] = Variable<String>(billingEmployeeId);
+    }
+    if (!nullToAbsent || billingEmployeeName != null) {
+      map['billing_employee_name'] = Variable<String>(billingEmployeeName);
+    }
     map['snapshot_business_name'] = Variable<String>(snapshotBusinessName);
     if (!nullToAbsent || snapshotTagline != null) {
       map['snapshot_tagline'] = Variable<String>(snapshotTagline);
@@ -3694,6 +4043,14 @@ class BillRow extends DataClass implements Insertable<BillRow> {
       localSeq: Value(localSeq),
       draftId: Value(draftId),
       customerName: Value(customerName),
+      customerPhone: Value(customerPhone),
+      customerNotes: Value(customerNotes),
+      billingEmployeeId: billingEmployeeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(billingEmployeeId),
+      billingEmployeeName: billingEmployeeName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(billingEmployeeName),
       snapshotBusinessName: Value(snapshotBusinessName),
       snapshotTagline: snapshotTagline == null && nullToAbsent
           ? const Value.absent()
@@ -3745,6 +4102,12 @@ class BillRow extends DataClass implements Insertable<BillRow> {
       localSeq: serializer.fromJson<int>(json['localSeq']),
       draftId: serializer.fromJson<String>(json['draftId']),
       customerName: serializer.fromJson<String>(json['customerName']),
+      customerPhone: serializer.fromJson<String>(json['customerPhone']),
+      customerNotes: serializer.fromJson<String>(json['customerNotes']),
+      billingEmployeeId:
+          serializer.fromJson<String?>(json['billingEmployeeId']),
+      billingEmployeeName:
+          serializer.fromJson<String?>(json['billingEmployeeName']),
       snapshotBusinessName:
           serializer.fromJson<String>(json['snapshotBusinessName']),
       snapshotTagline: serializer.fromJson<String?>(json['snapshotTagline']),
@@ -3782,6 +4145,10 @@ class BillRow extends DataClass implements Insertable<BillRow> {
       'localSeq': serializer.toJson<int>(localSeq),
       'draftId': serializer.toJson<String>(draftId),
       'customerName': serializer.toJson<String>(customerName),
+      'customerPhone': serializer.toJson<String>(customerPhone),
+      'customerNotes': serializer.toJson<String>(customerNotes),
+      'billingEmployeeId': serializer.toJson<String?>(billingEmployeeId),
+      'billingEmployeeName': serializer.toJson<String?>(billingEmployeeName),
       'snapshotBusinessName': serializer.toJson<String>(snapshotBusinessName),
       'snapshotTagline': serializer.toJson<String?>(snapshotTagline),
       'snapshotAddress': serializer.toJson<String>(snapshotAddress),
@@ -3815,6 +4182,10 @@ class BillRow extends DataClass implements Insertable<BillRow> {
           int? localSeq,
           String? draftId,
           String? customerName,
+          String? customerPhone,
+          String? customerNotes,
+          Value<String?> billingEmployeeId = const Value.absent(),
+          Value<String?> billingEmployeeName = const Value.absent(),
           String? snapshotBusinessName,
           Value<String?> snapshotTagline = const Value.absent(),
           String? snapshotAddress,
@@ -3844,6 +4215,14 @@ class BillRow extends DataClass implements Insertable<BillRow> {
         localSeq: localSeq ?? this.localSeq,
         draftId: draftId ?? this.draftId,
         customerName: customerName ?? this.customerName,
+        customerPhone: customerPhone ?? this.customerPhone,
+        customerNotes: customerNotes ?? this.customerNotes,
+        billingEmployeeId: billingEmployeeId.present
+            ? billingEmployeeId.value
+            : this.billingEmployeeId,
+        billingEmployeeName: billingEmployeeName.present
+            ? billingEmployeeName.value
+            : this.billingEmployeeName,
         snapshotBusinessName: snapshotBusinessName ?? this.snapshotBusinessName,
         snapshotTagline: snapshotTagline.present
             ? snapshotTagline.value
@@ -3886,6 +4265,18 @@ class BillRow extends DataClass implements Insertable<BillRow> {
       customerName: data.customerName.present
           ? data.customerName.value
           : this.customerName,
+      customerPhone: data.customerPhone.present
+          ? data.customerPhone.value
+          : this.customerPhone,
+      customerNotes: data.customerNotes.present
+          ? data.customerNotes.value
+          : this.customerNotes,
+      billingEmployeeId: data.billingEmployeeId.present
+          ? data.billingEmployeeId.value
+          : this.billingEmployeeId,
+      billingEmployeeName: data.billingEmployeeName.present
+          ? data.billingEmployeeName.value
+          : this.billingEmployeeName,
       snapshotBusinessName: data.snapshotBusinessName.present
           ? data.snapshotBusinessName.value
           : this.snapshotBusinessName,
@@ -3953,6 +4344,10 @@ class BillRow extends DataClass implements Insertable<BillRow> {
           ..write('localSeq: $localSeq, ')
           ..write('draftId: $draftId, ')
           ..write('customerName: $customerName, ')
+          ..write('customerPhone: $customerPhone, ')
+          ..write('customerNotes: $customerNotes, ')
+          ..write('billingEmployeeId: $billingEmployeeId, ')
+          ..write('billingEmployeeName: $billingEmployeeName, ')
           ..write('snapshotBusinessName: $snapshotBusinessName, ')
           ..write('snapshotTagline: $snapshotTagline, ')
           ..write('snapshotAddress: $snapshotAddress, ')
@@ -3987,6 +4382,10 @@ class BillRow extends DataClass implements Insertable<BillRow> {
         localSeq,
         draftId,
         customerName,
+        customerPhone,
+        customerNotes,
+        billingEmployeeId,
+        billingEmployeeName,
         snapshotBusinessName,
         snapshotTagline,
         snapshotAddress,
@@ -4020,6 +4419,10 @@ class BillRow extends DataClass implements Insertable<BillRow> {
           other.localSeq == this.localSeq &&
           other.draftId == this.draftId &&
           other.customerName == this.customerName &&
+          other.customerPhone == this.customerPhone &&
+          other.customerNotes == this.customerNotes &&
+          other.billingEmployeeId == this.billingEmployeeId &&
+          other.billingEmployeeName == this.billingEmployeeName &&
           other.snapshotBusinessName == this.snapshotBusinessName &&
           other.snapshotTagline == this.snapshotTagline &&
           other.snapshotAddress == this.snapshotAddress &&
@@ -4051,6 +4454,10 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
   final Value<int> localSeq;
   final Value<String> draftId;
   final Value<String> customerName;
+  final Value<String> customerPhone;
+  final Value<String> customerNotes;
+  final Value<String?> billingEmployeeId;
+  final Value<String?> billingEmployeeName;
   final Value<String> snapshotBusinessName;
   final Value<String?> snapshotTagline;
   final Value<String> snapshotAddress;
@@ -4081,6 +4488,10 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
     this.localSeq = const Value.absent(),
     this.draftId = const Value.absent(),
     this.customerName = const Value.absent(),
+    this.customerPhone = const Value.absent(),
+    this.customerNotes = const Value.absent(),
+    this.billingEmployeeId = const Value.absent(),
+    this.billingEmployeeName = const Value.absent(),
     this.snapshotBusinessName = const Value.absent(),
     this.snapshotTagline = const Value.absent(),
     this.snapshotAddress = const Value.absent(),
@@ -4112,6 +4523,10 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
     required int localSeq,
     required String draftId,
     this.customerName = const Value.absent(),
+    this.customerPhone = const Value.absent(),
+    this.customerNotes = const Value.absent(),
+    this.billingEmployeeId = const Value.absent(),
+    this.billingEmployeeName = const Value.absent(),
     required String snapshotBusinessName,
     this.snapshotTagline = const Value.absent(),
     this.snapshotAddress = const Value.absent(),
@@ -4159,6 +4574,10 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
     Expression<int>? localSeq,
     Expression<String>? draftId,
     Expression<String>? customerName,
+    Expression<String>? customerPhone,
+    Expression<String>? customerNotes,
+    Expression<String>? billingEmployeeId,
+    Expression<String>? billingEmployeeName,
     Expression<String>? snapshotBusinessName,
     Expression<String>? snapshotTagline,
     Expression<String>? snapshotAddress,
@@ -4190,6 +4609,11 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
       if (localSeq != null) 'local_seq': localSeq,
       if (draftId != null) 'draft_id': draftId,
       if (customerName != null) 'customer_name': customerName,
+      if (customerPhone != null) 'customer_phone': customerPhone,
+      if (customerNotes != null) 'customer_notes': customerNotes,
+      if (billingEmployeeId != null) 'billing_employee_id': billingEmployeeId,
+      if (billingEmployeeName != null)
+        'billing_employee_name': billingEmployeeName,
       if (snapshotBusinessName != null)
         'snapshot_business_name': snapshotBusinessName,
       if (snapshotTagline != null) 'snapshot_tagline': snapshotTagline,
@@ -4226,6 +4650,10 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
       Value<int>? localSeq,
       Value<String>? draftId,
       Value<String>? customerName,
+      Value<String>? customerPhone,
+      Value<String>? customerNotes,
+      Value<String?>? billingEmployeeId,
+      Value<String?>? billingEmployeeName,
       Value<String>? snapshotBusinessName,
       Value<String?>? snapshotTagline,
       Value<String>? snapshotAddress,
@@ -4256,6 +4684,10 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
       localSeq: localSeq ?? this.localSeq,
       draftId: draftId ?? this.draftId,
       customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
+      customerNotes: customerNotes ?? this.customerNotes,
+      billingEmployeeId: billingEmployeeId ?? this.billingEmployeeId,
+      billingEmployeeName: billingEmployeeName ?? this.billingEmployeeName,
       snapshotBusinessName: snapshotBusinessName ?? this.snapshotBusinessName,
       snapshotTagline: snapshotTagline ?? this.snapshotTagline,
       snapshotAddress: snapshotAddress ?? this.snapshotAddress,
@@ -4301,6 +4733,19 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
     }
     if (customerName.present) {
       map['customer_name'] = Variable<String>(customerName.value);
+    }
+    if (customerPhone.present) {
+      map['customer_phone'] = Variable<String>(customerPhone.value);
+    }
+    if (customerNotes.present) {
+      map['customer_notes'] = Variable<String>(customerNotes.value);
+    }
+    if (billingEmployeeId.present) {
+      map['billing_employee_id'] = Variable<String>(billingEmployeeId.value);
+    }
+    if (billingEmployeeName.present) {
+      map['billing_employee_name'] =
+          Variable<String>(billingEmployeeName.value);
     }
     if (snapshotBusinessName.present) {
       map['snapshot_business_name'] =
@@ -4387,6 +4832,10 @@ class BillsCompanion extends UpdateCompanion<BillRow> {
           ..write('localSeq: $localSeq, ')
           ..write('draftId: $draftId, ')
           ..write('customerName: $customerName, ')
+          ..write('customerPhone: $customerPhone, ')
+          ..write('customerNotes: $customerNotes, ')
+          ..write('billingEmployeeId: $billingEmployeeId, ')
+          ..write('billingEmployeeName: $billingEmployeeName, ')
           ..write('snapshotBusinessName: $snapshotBusinessName, ')
           ..write('snapshotTagline: $snapshotTagline, ')
           ..write('snapshotAddress: $snapshotAddress, ')
@@ -11074,6 +11523,7 @@ typedef $$StudioProfilesTableCreateCompanionBuilder = StudioProfilesCompanion
   Value<String> currencyCode,
   Value<String> invoicePrefix,
   Value<String?> invoiceFooter,
+  Value<bool> dark,
   required DateTime createdAt,
   required DateTime updatedAt,
 });
@@ -11094,6 +11544,7 @@ typedef $$StudioProfilesTableUpdateCompanionBuilder = StudioProfilesCompanion
   Value<String> currencyCode,
   Value<String> invoicePrefix,
   Value<String?> invoiceFooter,
+  Value<bool> dark,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -11152,6 +11603,9 @@ class $$StudioProfilesTableFilterComposer
 
   ColumnFilters<String> get invoiceFooter => $composableBuilder(
       column: $table.invoiceFooter, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get dark => $composableBuilder(
+      column: $table.dark, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -11221,6 +11675,9 @@ class $$StudioProfilesTableOrderingComposer
       column: $table.invoiceFooter,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get dark => $composableBuilder(
+      column: $table.dark, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -11282,6 +11739,9 @@ class $$StudioProfilesTableAnnotationComposer
   GeneratedColumn<String> get invoiceFooter => $composableBuilder(
       column: $table.invoiceFooter, builder: (column) => column);
 
+  GeneratedColumn<bool> get dark =>
+      $composableBuilder(column: $table.dark, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -11331,6 +11791,7 @@ class $$StudioProfilesTableTableManager extends RootTableManager<
             Value<String> currencyCode = const Value.absent(),
             Value<String> invoicePrefix = const Value.absent(),
             Value<String?> invoiceFooter = const Value.absent(),
+            Value<bool> dark = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
           }) =>
@@ -11350,6 +11811,7 @@ class $$StudioProfilesTableTableManager extends RootTableManager<
             currencyCode: currencyCode,
             invoicePrefix: invoicePrefix,
             invoiceFooter: invoiceFooter,
+            dark: dark,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -11369,6 +11831,7 @@ class $$StudioProfilesTableTableManager extends RootTableManager<
             Value<String> currencyCode = const Value.absent(),
             Value<String> invoicePrefix = const Value.absent(),
             Value<String?> invoiceFooter = const Value.absent(),
+            Value<bool> dark = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
           }) =>
@@ -11388,6 +11851,7 @@ class $$StudioProfilesTableTableManager extends RootTableManager<
             currencyCode: currencyCode,
             invoicePrefix: invoicePrefix,
             invoiceFooter: invoiceFooter,
+            dark: dark,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -12451,6 +12915,11 @@ typedef $$EmployeesTableProcessedTableManager = ProcessedTableManager<
         {bool attendanceRecordsRefs, bool salaryAdvancesRefs})>;
 typedef $$BillDraftsTableCreateCompanionBuilder = BillDraftsCompanion Function({
   required String draftId,
+  Value<String?> billingEmployeeId,
+  Value<String?> billingEmployeeName,
+  Value<String> customerName,
+  Value<String> customerPhone,
+  Value<String> customerNotes,
   Value<int> discountPercent,
   Value<int> discountFlatPaise,
   Value<int> taxBasisPoints,
@@ -12460,6 +12929,11 @@ typedef $$BillDraftsTableCreateCompanionBuilder = BillDraftsCompanion Function({
 });
 typedef $$BillDraftsTableUpdateCompanionBuilder = BillDraftsCompanion Function({
   Value<String> draftId,
+  Value<String?> billingEmployeeId,
+  Value<String?> billingEmployeeName,
+  Value<String> customerName,
+  Value<String> customerPhone,
+  Value<String> customerNotes,
   Value<int> discountPercent,
   Value<int> discountFlatPaise,
   Value<int> taxBasisPoints,
@@ -12498,6 +12972,23 @@ class $$BillDraftsTableFilterComposer
   });
   ColumnFilters<String> get draftId => $composableBuilder(
       column: $table.draftId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get billingEmployeeId => $composableBuilder(
+      column: $table.billingEmployeeId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get billingEmployeeName => $composableBuilder(
+      column: $table.billingEmployeeName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerName => $composableBuilder(
+      column: $table.customerName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerNotes => $composableBuilder(
+      column: $table.customerNotes, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get discountPercent => $composableBuilder(
       column: $table.discountPercent,
@@ -12551,6 +13042,26 @@ class $$BillDraftsTableOrderingComposer
   ColumnOrderings<String> get draftId => $composableBuilder(
       column: $table.draftId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get billingEmployeeId => $composableBuilder(
+      column: $table.billingEmployeeId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get billingEmployeeName => $composableBuilder(
+      column: $table.billingEmployeeName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerName => $composableBuilder(
+      column: $table.customerName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerNotes => $composableBuilder(
+      column: $table.customerNotes,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get discountPercent => $composableBuilder(
       column: $table.discountPercent,
       builder: (column) => ColumnOrderings(column));
@@ -12581,6 +13092,21 @@ class $$BillDraftsTableAnnotationComposer
   });
   GeneratedColumn<String> get draftId =>
       $composableBuilder(column: $table.draftId, builder: (column) => column);
+
+  GeneratedColumn<String> get billingEmployeeId => $composableBuilder(
+      column: $table.billingEmployeeId, builder: (column) => column);
+
+  GeneratedColumn<String> get billingEmployeeName => $composableBuilder(
+      column: $table.billingEmployeeName, builder: (column) => column);
+
+  GeneratedColumn<String> get customerName => $composableBuilder(
+      column: $table.customerName, builder: (column) => column);
+
+  GeneratedColumn<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone, builder: (column) => column);
+
+  GeneratedColumn<String> get customerNotes => $composableBuilder(
+      column: $table.customerNotes, builder: (column) => column);
 
   GeneratedColumn<int> get discountPercent => $composableBuilder(
       column: $table.discountPercent, builder: (column) => column);
@@ -12643,6 +13169,11 @@ class $$BillDraftsTableTableManager extends RootTableManager<
               $$BillDraftsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> draftId = const Value.absent(),
+            Value<String?> billingEmployeeId = const Value.absent(),
+            Value<String?> billingEmployeeName = const Value.absent(),
+            Value<String> customerName = const Value.absent(),
+            Value<String> customerPhone = const Value.absent(),
+            Value<String> customerNotes = const Value.absent(),
             Value<int> discountPercent = const Value.absent(),
             Value<int> discountFlatPaise = const Value.absent(),
             Value<int> taxBasisPoints = const Value.absent(),
@@ -12652,6 +13183,11 @@ class $$BillDraftsTableTableManager extends RootTableManager<
           }) =>
               BillDraftsCompanion(
             draftId: draftId,
+            billingEmployeeId: billingEmployeeId,
+            billingEmployeeName: billingEmployeeName,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            customerNotes: customerNotes,
             discountPercent: discountPercent,
             discountFlatPaise: discountFlatPaise,
             taxBasisPoints: taxBasisPoints,
@@ -12661,6 +13197,11 @@ class $$BillDraftsTableTableManager extends RootTableManager<
           ),
           createCompanionCallback: ({
             required String draftId,
+            Value<String?> billingEmployeeId = const Value.absent(),
+            Value<String?> billingEmployeeName = const Value.absent(),
+            Value<String> customerName = const Value.absent(),
+            Value<String> customerPhone = const Value.absent(),
+            Value<String> customerNotes = const Value.absent(),
             Value<int> discountPercent = const Value.absent(),
             Value<int> discountFlatPaise = const Value.absent(),
             Value<int> taxBasisPoints = const Value.absent(),
@@ -12670,6 +13211,11 @@ class $$BillDraftsTableTableManager extends RootTableManager<
           }) =>
               BillDraftsCompanion.insert(
             draftId: draftId,
+            billingEmployeeId: billingEmployeeId,
+            billingEmployeeName: billingEmployeeName,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            customerNotes: customerNotes,
             discountPercent: discountPercent,
             discountFlatPaise: discountFlatPaise,
             taxBasisPoints: taxBasisPoints,
@@ -13071,6 +13617,10 @@ typedef $$BillsTableCreateCompanionBuilder = BillsCompanion Function({
   required int localSeq,
   required String draftId,
   Value<String> customerName,
+  Value<String> customerPhone,
+  Value<String> customerNotes,
+  Value<String?> billingEmployeeId,
+  Value<String?> billingEmployeeName,
   required String snapshotBusinessName,
   Value<String?> snapshotTagline,
   Value<String> snapshotAddress,
@@ -13102,6 +13652,10 @@ typedef $$BillsTableUpdateCompanionBuilder = BillsCompanion Function({
   Value<int> localSeq,
   Value<String> draftId,
   Value<String> customerName,
+  Value<String> customerPhone,
+  Value<String> customerNotes,
+  Value<String?> billingEmployeeId,
+  Value<String?> billingEmployeeName,
   Value<String> snapshotBusinessName,
   Value<String?> snapshotTagline,
   Value<String> snapshotAddress,
@@ -13184,6 +13738,20 @@ class $$BillsTableFilterComposer extends Composer<_$AppDatabase, $BillsTable> {
 
   ColumnFilters<String> get customerName => $composableBuilder(
       column: $table.customerName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerNotes => $composableBuilder(
+      column: $table.customerNotes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get billingEmployeeId => $composableBuilder(
+      column: $table.billingEmployeeId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get billingEmployeeName => $composableBuilder(
+      column: $table.billingEmployeeName,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get snapshotBusinessName => $composableBuilder(
       column: $table.snapshotBusinessName,
@@ -13331,6 +13899,22 @@ class $$BillsTableOrderingComposer
       column: $table.customerName,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerNotes => $composableBuilder(
+      column: $table.customerNotes,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get billingEmployeeId => $composableBuilder(
+      column: $table.billingEmployeeId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get billingEmployeeName => $composableBuilder(
+      column: $table.billingEmployeeName,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get snapshotBusinessName => $composableBuilder(
       column: $table.snapshotBusinessName,
       builder: (column) => ColumnOrderings(column));
@@ -13439,6 +14023,18 @@ class $$BillsTableAnnotationComposer
 
   GeneratedColumn<String> get customerName => $composableBuilder(
       column: $table.customerName, builder: (column) => column);
+
+  GeneratedColumn<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone, builder: (column) => column);
+
+  GeneratedColumn<String> get customerNotes => $composableBuilder(
+      column: $table.customerNotes, builder: (column) => column);
+
+  GeneratedColumn<String> get billingEmployeeId => $composableBuilder(
+      column: $table.billingEmployeeId, builder: (column) => column);
+
+  GeneratedColumn<String> get billingEmployeeName => $composableBuilder(
+      column: $table.billingEmployeeName, builder: (column) => column);
 
   GeneratedColumn<String> get snapshotBusinessName => $composableBuilder(
       column: $table.snapshotBusinessName, builder: (column) => column);
@@ -13580,6 +14176,10 @@ class $$BillsTableTableManager extends RootTableManager<
             Value<int> localSeq = const Value.absent(),
             Value<String> draftId = const Value.absent(),
             Value<String> customerName = const Value.absent(),
+            Value<String> customerPhone = const Value.absent(),
+            Value<String> customerNotes = const Value.absent(),
+            Value<String?> billingEmployeeId = const Value.absent(),
+            Value<String?> billingEmployeeName = const Value.absent(),
             Value<String> snapshotBusinessName = const Value.absent(),
             Value<String?> snapshotTagline = const Value.absent(),
             Value<String> snapshotAddress = const Value.absent(),
@@ -13611,6 +14211,10 @@ class $$BillsTableTableManager extends RootTableManager<
             localSeq: localSeq,
             draftId: draftId,
             customerName: customerName,
+            customerPhone: customerPhone,
+            customerNotes: customerNotes,
+            billingEmployeeId: billingEmployeeId,
+            billingEmployeeName: billingEmployeeName,
             snapshotBusinessName: snapshotBusinessName,
             snapshotTagline: snapshotTagline,
             snapshotAddress: snapshotAddress,
@@ -13642,6 +14246,10 @@ class $$BillsTableTableManager extends RootTableManager<
             required int localSeq,
             required String draftId,
             Value<String> customerName = const Value.absent(),
+            Value<String> customerPhone = const Value.absent(),
+            Value<String> customerNotes = const Value.absent(),
+            Value<String?> billingEmployeeId = const Value.absent(),
+            Value<String?> billingEmployeeName = const Value.absent(),
             required String snapshotBusinessName,
             Value<String?> snapshotTagline = const Value.absent(),
             Value<String> snapshotAddress = const Value.absent(),
@@ -13673,6 +14281,10 @@ class $$BillsTableTableManager extends RootTableManager<
             localSeq: localSeq,
             draftId: draftId,
             customerName: customerName,
+            customerPhone: customerPhone,
+            customerNotes: customerNotes,
+            billingEmployeeId: billingEmployeeId,
+            billingEmployeeName: billingEmployeeName,
             snapshotBusinessName: snapshotBusinessName,
             snapshotTagline: snapshotTagline,
             snapshotAddress: snapshotAddress,

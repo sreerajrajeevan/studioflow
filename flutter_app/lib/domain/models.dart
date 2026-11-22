@@ -385,6 +385,10 @@ class FinalizedBill {
     required this.localSeq,
     required this.draftId,
     this.customerName = '',
+    this.customerPhone = '',
+    this.customerNotes = '',
+    this.billingEmployeeId,
+    this.billingEmployeeName,
     required this.studio,
     required this.studioPrimaryColor,
     required this.lines,
@@ -416,6 +420,14 @@ class FinalizedBill {
   /// The draft this bill was finalized from — its idempotency key.
   final String draftId;
   final String customerName;
+
+  /// Customer phone/notes and the billing employee (Task 5.1),
+  /// snapshotted at finalization. The employee NAME is the historical
+  /// record; the id links back to the employee where still present.
+  final String customerPhone;
+  final String customerNotes;
+  final String? billingEmployeeId;
+  final String? billingEmployeeName;
   final StudioSnapshot studio;
   final int studioPrimaryColor;
   final List<BillLine> lines;
