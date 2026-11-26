@@ -121,6 +121,12 @@ class BrandingPreset {
   final String? logoAssetPath;
 }
 
+const genericStudioBranding = StudioBranding(
+  businessName: 'StudioFlow',
+  primaryColor: Color(0xFF232323),
+  secondaryColor: Color(0xFFC9A96A),
+);
+
 const dpoiseDemoBranding = StudioBranding(
   businessName: 'D POISE',
   tagline: 'Groom Studio',

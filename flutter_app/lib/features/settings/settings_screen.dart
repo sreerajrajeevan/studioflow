@@ -1,14 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../data/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/state.dart';
 import '../../branding/brand_logo.dart';
 import '../../branding/studio_branding.dart';
 
-/// Settings prototype. Branding edits are LIVE (they update
-/// [brandingProvider] and re-theme the whole app — the white-label demo).
-/// Payment/invoice fields edit the same in-memory profile; persistence
-/// arrives with the Drift task. No fake "saved to server" claims anywhere.
+/// Local studio configuration with explicit persistence on Apply.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -53,9 +53,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.dispose();
   }
 
-  void _apply() {
+  bool _saving = false;
+  String? _pendingLogo;
+  bool _logoChanged = false;
+
+  Future<void> _pickLogo() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 768,
+        maxHeight: 768,
+        imageQuality: 85,
+      );
+      if (picked == null || !mounted) return;
+      if (await picked.length() > 512 * 1024) {
+        throw const FormatException('Choose an image smaller than 512 KB.');
+      }
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _pendingLogo = 'custom:${base64Encode(bytes)}';
+        _logoChanged = true;
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to load logo. Choose a smaller image.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _apply() async {
+    if (_saving) return;
+    if (_name.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a studio name.')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
     final current = ref.read(brandingProvider);
-    ref.read(brandingProvider.notifier).state = current.copyWith(
+    final updated = StudioBranding(
+      primaryColor: current.primaryColor,
+      secondaryColor: current.secondaryColor,
+      dark: current.dark,
+      email: current.email,
+      currencyCode: current.currencyCode,
+      logoAssetPath: _logoChanged ? _pendingLogo :
+          (current.logoAssetPath == poiseLogoAssetKey &&
+              _name.text.trim() != 'D POISE' ? null : current.logoAssetPath),
       businessName: _name.text.trim().isEmpty
           ? current.businessName
           : _name.text.trim(),
@@ -71,11 +118,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       invoiceFooter:
           _footer.text.trim().isEmpty ? null : _footer.text.trim(),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Saved on this device.'),
-      ),
-    );
+    try {
+      await ref.read(studioConfigRepositoryProvider).save(updated);
+      if (!mounted) return;
+      ref.read(brandingProvider.notifier).state = updated;
+      setState(() { _logoChanged = false; _pendingLogo = null; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saved on this device.')),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save settings. Please retry.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   void _applyPreset(BrandingPreset preset) {
@@ -130,7 +189,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Text('Settings', style: theme.textTheme.headlineSmall),
         const SizedBox(height: 4),
         Text(
-          'Studio profile, branding and configuration. Changes apply live in this demo.',
+          'Studio profile, branding and configuration. Save your studio profile on this device.',
           style: theme.textTheme.bodySmall,
         ),
         const SizedBox(height: 18),
@@ -141,7 +200,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BrandLogo(branding: branding, size: 54),
+                  BrandLogo(
+                    branding: _logoChanged
+                        ? StudioBranding(
+                            businessName: branding.businessName,
+                            primaryColor: branding.primaryColor,
+                            secondaryColor: branding.secondaryColor,
+                            logoAssetPath: _pendingLogo,
+                          )
+                        : branding,
+                    size: 54,
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -165,6 +234,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
               const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: [
+                  OutlinedButton(
+                    onPressed: _saving ? null : _pickLogo,
+                    child: const Text('Upload logo'),
+                  ),
+                  TextButton(
+                    onPressed: _saving ? null : () => setState(() {
+                      _pendingLogo = null;
+                      _logoChanged = true;
+                    }),
+                    child: const Text('Remove logo'),
+                  ),
+                ],
+              ),
               TextField(
                 controller: _address,
                 decoration: const InputDecoration(labelText: 'Address'),
@@ -260,8 +345,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _Section(
           title: 'Services',
           child: Text(
-            'The demo uses the sample catalog (Hair / Beard / Facial). '
-            'Service editing arrives with the catalog task.',
+            'Manage categories, services and prices from the Services screen.',
             style: theme.textTheme.bodyMedium,
           ),
         ),
@@ -371,14 +455,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title: 'Data management',
           child: Text(
             'Backup, restore and multi-device sync arrive with the backend '
-            'task. This demo keeps everything in memory only.',
+            'task. Business records are stored locally on this device.',
             style: theme.textTheme.bodyMedium,
           ),
         ),
         const SizedBox(height: 6),
         FilledButton(
           key: const ValueKey('apply_settings_button'),
-          onPressed: _apply,
+          onPressed: _saving ? null : _apply,
           child: const Text('Apply changes'),
         ),
       ],
