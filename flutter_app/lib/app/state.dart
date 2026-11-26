@@ -4,7 +4,7 @@ import '../branding/studio_branding.dart';
 /// Active studio branding. Settings edits and preset picks update this and
 /// the whole app re-themes immediately (MaterialApp watches it).
 final brandingProvider = StateProvider<StudioBranding>(
-  (ref) => dpoiseDemoBranding,
+  (ref) => genericStudioBranding,
 );
 
 /// Two future roles. STAFF hides administrative destinations in the UI.

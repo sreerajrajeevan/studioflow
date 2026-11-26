@@ -33,6 +33,21 @@ class BrandLogo extends StatelessWidget {
         filterQuality: FilterQuality.medium,
       );
     }
+    final logo = branding.logoAssetPath;
+    if (logo != null && logo.startsWith('custom:')) {
+      try {
+        return Image.memory(
+          base64Decode(logo.substring(7)),
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stack) =>
+              BrandMark(branding: branding, size: size),
+        );
+      } on FormatException {
+        // An invalid saved logo must not prevent the app from opening.
+      }
+    }
     return BrandMark(branding: branding, size: size);
   }
 }
